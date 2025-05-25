@@ -1,0 +1,1954 @@
+{
+  "name": "SIMORGH",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "033e58ab-9bff-4372-b994-98c95e783a10",
+              "leftValue": "={{ $('SIMORGH').item.json.callback_query }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f957d831-fcf8-4f5b-bb23-7402eb6d6200",
+      "name": "Check_Message_type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        620,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "member",
+        "chatId": "={{ $('BOT INFO').item.json['ch-username'] }}",
+        "userId": "={{ ($('SIMORGH').item.json.callback_query?.message?.chat?.id != null && $('SIMORGH').item.json.callback_query?.message?.chat?.id !== '') ? $('SIMORGH').item.json.callback_query.message.chat.id : ($('SIMORGH').item.json.message?.from?.id != null && $('SIMORGH').item.json.message?.from?.id !== '') ? $('SIMORGH').item.json.message.from.id : ($('SIMORGH').item.json.my_chat_member?.from?.id != null && $('SIMORGH').item.json.my_chat_member.from.id !== '') ? $('SIMORGH').item.json.my_chat_member.from.id : '' }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        240
+      ],
+      "id": "adb5912c-7f94-410a-bcc9-83656b02b2bf",
+      "name": "Check Channel User",
+      "webhookId": "cb738d4b-1187-4e58-a144-271036ef6b82",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "093df3c4-a8f5-45c8-9dc5-d448c3aaec76",
+              "leftValue": "={{ $('Check Channel User').item.json.result.status }}",
+              "rightValue": "member",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        340,
+        240
+      ],
+      "id": "24fedf4d-2972-4461-b8b9-f96909a1d526",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8cbf4405-ec74-43e5-bc14-ce352eea6fcb",
+              "leftValue": "={{ $json.result.status }}",
+              "rightValue": "creator",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "2628e9b7-b1dd-498a-940e-42f9df984beb",
+              "leftValue": "={{ $json.result.status }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        60
+      ],
+      "id": "ceeebae5-2bcf-4764-bac9-e4fc45abd183",
+      "name": "Check Creator"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('If').item.json.result.user.id }}",
+        "text": "سلام برای ادامه فعالیت نیاز هست که داخل کانال زیر عضو شوید \n\nپس از عضو شدن روی دکمه \"عضو شدم\" کلیک کنید!",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "=کانال {{ $('BOT INFO').item.json['bot-name'] }}",
+                    "additionalFields": {
+                      "url": "={{ $('BOT INFO').item.json['ch-link'] }}"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "عضو شدم!",
+                    "additionalFields": {
+                      "callback_data": "joinedch^"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -120
+      ],
+      "id": "c9615458-0bc8-4910-9515-f4a079249e20",
+      "name": "LINK JOIN",
+      "webhookId": "eeb9730c-b717-44c8-9b87-b5bf6c80cd03",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -680,
+        320
+      ],
+      "id": "3365906d-1f43-4dd2-a2b0-728efb8dfba4",
+      "name": "SIMORGH",
+      "webhookId": "ce491d35-166b-41ae-bf4a-377360ec0944",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e6ada1ee-8e0e-468e-91cb-db6c5e541b6b",
+              "name": "TOKEN",
+              "value": "8154200439:AAEIjH2wBYrVKPomLu7ygImx3Vpry5-uf1w",
+              "type": "string"
+            },
+            {
+              "id": "c1ff6ad3-78d3-4380-bbda-b31222ba282b",
+              "name": "bot-name",
+              "value": "سیمرغ",
+              "type": "string"
+            },
+            {
+              "id": "9a2ab0d9-fae7-49c8-b2b4-211192d48a60",
+              "name": "support-username",
+              "value": "https://t.me/mohamminch",
+              "type": "string"
+            },
+            {
+              "id": "b1d6f329-f012-493e-866b-4c6c304ca8cc",
+              "name": "admin-username",
+              "value": 1983438871,
+              "type": "number"
+            },
+            {
+              "id": "af664211-d330-4c54-bb31-6dc27e2f6f00",
+              "name": "ch-username",
+              "value": "-1002496400244",
+              "type": "string"
+            },
+            {
+              "id": "0723502b-b95c-483d-8cb6-6361113352b5",
+              "name": "ch-link",
+              "value": "https://t.me/+IfWsB4WaehI3NWQ8",
+              "type": "string"
+            },
+            {
+              "id": "e940233a-b82e-4ab5-b30b-d8fd0a196cf1",
+              "name": "Season",
+              "value": "1",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        320
+      ],
+      "id": "deee9dab-8bd6-4014-b3f9-08e3dd201a22",
+      "name": "BOT INFO"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.result }}",
+                    "rightValue": "=menu",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Menu"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5e0653a0-0a62-4190-9383-0882fe4494b5",
+                    "leftValue": "={{ $json.result }}",
+                    "rightValue": "requesttodb",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Request to db"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        120
+      ],
+      "id": "ae94be46-8e28-409d-8fc6-0a7cbde2a9af",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن اطلاعات از نود BOT TOKEN\nconst botData = $('BOT INFO').item.json; // خواندن داده‌های نود BOT TOKEN\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\"; // دریافت نام بات\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\"; // دریافت یوزرنیم پشتیبانی\n\n// دریافت مقدار original از نود قبلی\nconst inputData = $('Merge Switcher data').item.json.original;\n\n// تعریف پیام‌ها و دکمه‌های مربوط به هر مقدار original\nconst responses = {\n    \"help^\": {\n        message: `📌 راهنمای استفاده از ${botName}\\n\\n[... به زودی ...]`,\n        buttons: [\n            [{ text: \"» بازگشت\", callback_data: \"userpanel^\" }]\n        ]\n    },\n    \"userpanel^\": {\n        message: `کاربر گرامی\\nلطفا یکی از گزینه‌های زیر رو برای ${botName} انتخاب کنید :`,\n        buttons: [\n            [{ text: \"🎯 امتیازدهی به دیگران\", callback_data: \"tovote^\" }],\n            [\n                { text: \"» پروفایل شما\", callback_data: \"userprofile^\" },\n                { text: \"ردپای امتیازات\", callback_data: \"historypoints^\" }\n            ],\n            [\n                { text: \"» راهنما\", callback_data: \"help^\" },\n                { text: \"» پشتیبانی\", url: `${botsupport}` }\n            ]\n        ]\n    },\n    \"historypoints^\": {\n        message: `📌 تاریخچه امتیازات شما\\n\\nدر این بخش می‌توانید امتیازهایی که به دیگران داده‌اید و امتیازهایی که از دیگران دریافت کرده‌اید را همراه با وضعیت آن‌ها مشاهده کنید.\\n\\nلطفاً از گزینه‌های زیر، انتخاب کنید:`,\n        buttons: [\n            [{text : \"تابلوی امتیازات 🏆\", callback_data: \"Scoreboard^\"} ],\n            [\n            { text: \"امتیازهای شما 🎯\", callback_data: \"receivedpoints^\" },\n            { text: \"امتیازهایی که دادید 💬\", callback_data: \"givenpoints^\" }\n           ],\n            [{ text: \"» بازگشت\", callback_data: \"userpanel^\" }]\n        ]\n    },\n    \"joinedch^\": {\n        message: `📌 شما با موفقیت به کانال ${botName} پیوستید.`,\n        buttons: [\n            [{ text: \"» دریافت منو\", callback_data: \"userpanel^\" }]\n        ]\n    }\n};\n\n// بررسی اینکه مقدار original در لیست پاسخ‌های ما وجود دارد یا نه\nif (responses[inputData]) {\n    return {\n        json: {\n            message: responses[inputData].message,\n            reply_markup: {\n                inline_keyboard: responses[inputData].buttons // دکمه‌ها را جداگانه قرار می‌دهد تا زیر هم باشند\n            },\n            parse_mode: \"HTML\"\n        }\n    };\n}\n\n// مقدار پیش‌فرض در صورتی که مقدار original در لیست نبود\nreturn {\n    json: {\n        result: $json.result,\n        original: inputData\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -60
+      ],
+      "id": "5f5e9af8-a58d-4f31-81c8-7442bd3b4d5f",
+      "name": "Make Menu Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('BOT INFO').item.json.TOKEN }}/editMessageText",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('SIMORGH').item.json.callback_query.from.id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ $json.reply_markup }}"
+            },
+            {
+              "name": "message_id",
+              "value": "={{ $('SIMORGH').item.json.callback_query.message.message_id }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "={{ $json.parse_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d71a3546-95ce-46ad-bd92-a8b410ee5075",
+      "name": "SEND result Click Menu Layer 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1380,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن اطلاعات از نود BOT TOKEN\nconst botData = $('BOT INFO').item.json;\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\";\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\";\nconst season = botData[\"support-username\"] || \"پشتیبانی ندارد\";\n\n// دریافت مقدار original از نود قبلی\nconst inputData = $('Merge Switcher data').item.json.original;\n\n// ساخت کوئری SQL برای userprofile^\nif (inputData === \"userprofile^\") {\n    const userId = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat?.id || \n                  $item(\"0\").$node[\"SIMORGH\"][\"message\"]?.from?.id;\n    if (userId && !isNaN(userId)) {\n        const query = `\n            SELECT \n                u.*, \n                u.balance AS user_balance,\n                (SELECT SUM(t.amount) \n                 FROM transactions t\n                 WHERE t.touser = u.user_id) AS total_amount\n            FROM \n                users u\n            WHERE \n                u.user_id = ${userId};\n        `;\n        return {\n            json: { query: query, \"Output Query Execution Details\": false }\n        };\n    } else {\n        return {\n            json: {\n                error: \"شناسه کاربر یافت نشد یا نامعتبر است\",\n                status: \"error\"\n            }\n        };\n    }\n} else if (inputData.startsWith(\"tovote^\")) {\n    const userId = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat?.id ||\n                   $item(\"0\").$node[\"SIMORGH\"][\"message\"]?.from?.id;\n    const parts = inputData.split(\"^\");\n    if (parts.length === 3) { // e.g. \"tovote^180497899^2\"\n        const query = `\n            SELECT *\n            FROM \\`users\\`\n            WHERE \\`user_id\\` = ${userId};\n        `;\n        return { json: { query: query, \"Output Query Execution Details\": false } };\n    } else {\n        const suffix = inputData.slice(\"tovote^\".length);\n        if (suffix) { // numeric suffix provided e.g. \"tovote^1412414\"\n            if (!isNaN(Number(suffix))) {\n                const query = `\n                    SELECT *\n                    FROM \\`users\\`\n                    WHERE \\`user_id\\` = ${userId};\n                `;\n                return { json: { query: query, \"Output Query Execution Details\": false } };\n            }\n            // ...optional: handle non-numeric suffix if needed...\n        } else { // exactly \"tovote^\"\n            const seasonId = $('BOT INFO').item.json.Season;\n            const query = `\n                SELECT s.*, \n                    (SELECT JSON_ARRAYAGG(\n                        CASE\n                            WHEN user_id = ${userId} THEN JSON_OBJECT(\n                                'self_id', id,\n                                'self_user_id', user_id,\n                                'self_username', username,\n                                'self_balance', balance,\n                                'self_created_at', created_at,\n                                'self_birthday', birthday,\n                                'self_name', name\n                            )\n                            ELSE JSON_OBJECT(\n                                'id', id,\n                                'user_id', user_id,\n                                'username', username,\n                                'balance', balance,\n                                'created_at', created_at,\n                                'birthday', birthday,\n                                'name', name\n                            )\n                        END\n                    ) FROM users) AS all_users\n                FROM Season s\n                WHERE s.id = ${seasonId};\n            `;\n            return { json: { query: query, \"Output Query Execution Details\": false } };\n        }\n    }\n} else if (inputData.startsWith(\"givenpoints^\")) {    // modified condition to handle givenpoints^ and givenpoints^number\n    const userId = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat?.id || \n                  $item(\"0\").$node[\"SIMORGH\"][\"message\"]?.from?.id;\n    const query = `\n        SELECT DISTINCT\n            t.transaction_id, \n            t.user_id, \n            t.amount, \n            t.created_at, \n            COALESCE(utouser.name, 'gotovote^') AS touser_name,\n            t.touser AS touser_user_id,\n            t.season_id, \n            t.message_id, \n            t.reason, \n            COALESCE(uuser.name, 'gotovote^') AS main_user_name\n        FROM \n            transactions t\n        LEFT JOIN \n            users utouser ON t.touser = utouser.user_id\n        LEFT JOIN \n            users uuser ON t.user_id = uuser.user_id\n        WHERE \n            t.user_id = ${userId}\n\n        UNION ALL\n\n        SELECT\n            NULL AS transaction_id, \n            ${userId} AS user_id, \n            NULL AS amount, \n            NULL AS created_at, \n            'gotovote^' AS touser_name,\n            NULL AS touser_user_id,\n            NULL AS season_id, \n            NULL AS message_id, \n            NULL AS reason, \n            'gotovote^' AS main_user_name\n        WHERE NOT EXISTS (\n            SELECT 1 FROM transactions t WHERE t.user_id = ${userId}\n        );\n    `;\n    return {\n        json: { query: query, \"Output Query Execution Details\": true }\n    };\n} else if (inputData.startsWith(\"receivedpoints^\")) {\n    const userId = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat?.id || \n                  $item(\"0\").$node[\"SIMORGH\"][\"message\"]?.from?.id;\n\n    const query = `\n        SELECT DISTINCT\n            t.transaction_id, \n            t.user_id, \n            t.amount, \n            t.created_at, \n            COALESCE(utouser.name, 'gotovote^') AS touser_name,\n            t.touser AS touser_user_id,\n            t.season_id, \n            t.message_id, \n            t.reason, \n            COALESCE(uuser.name, 'gotovote^') AS main_user_name\n        FROM \n            transactions t\n        LEFT JOIN \n            users utouser ON t.touser = utouser.user_id\n        LEFT JOIN \n            users uuser ON t.user_id = uuser.user_id\n        WHERE \n            t.touser = ${userId}\n    `;\n    return {\n        json: { query: query, \"Output Query Execution Details\": true }\n    };\n} else if (inputData === \"Scoreboard^\") { // new branch for Scoreboard^ input\n    const query = `\n        SELECT \n            t.touser AS touser_user_id,\n            COALESCE(u.name, 'Unknown') AS touser_name,\n            SUM(t.amount) AS sum_amount\n        FROM \n            transactions t\n        LEFT JOIN \n            users u ON t.touser = u.user_id\n        GROUP BY \n            t.touser, u.name\n        ORDER BY \n            SUM(t.amount) DESC;\n    `;\n    return {\n        json: { query: query, \"Output Query Execution Details\": true }\n    };\n} else if (inputData.startsWith(\"Confirm^\")) {\n    const parts = inputData.split(\"^\");\n    const data_touser = parts[1];\n    const data_amount = parts[2];\n    const userId = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"].message.chat.id ||\n                   $item(\"0\").$node[\"SIMORGH\"].json[\"message\"].chat.id;\n    // Updated reason extraction from SIMORGH node\n    let simText = $('SIMORGH').item.json.callback_query.message.text;\n    let reasonMatch = simText.match(/دلیل\\s*:\\s*([\\s\\S]*?)(?=\\n-+)/);\n    const reasonText = reasonMatch ? reasonMatch[1].trim() : \"\";\n    const query = `\n        SELECT balance INTO @current_balance\n        FROM users\n        WHERE user_id = ${userId};\n\n        SET @sufficient_balance = @current_balance >= ${data_amount};\n\n        UPDATE users\n        SET balance = balance - ${data_amount}\n        WHERE user_id = ${userId} AND @sufficient_balance;\n\n        INSERT INTO transactions (user_id, amount, touser, season_id, message_id, reason)\n        SELECT ${userId}, ${data_amount}, ${data_touser}, ${$('BOT INFO').item.json.Season}, NULL, '${reasonText}'\n        FROM dual\n        WHERE @sufficient_balance;\n\n        SELECT \n            u.balance AS updated_balance,\n            t.transaction_id,\n            t.amount,\n            t.touser,\n            u2.name AS touser_name,\n            t.season_id,\n            t.message_id,\n            t.reason,\n            CASE\n                WHEN @sufficient_balance THEN 'false'\n                ELSE 'true'\n            END AS Insufficientcredit\n        FROM users u\n        LEFT JOIN transactions t ON t.user_id = u.user_id\n        LEFT JOIN users u2 ON u2.user_id = t.touser\n        WHERE u.user_id = ${userId}\n        ORDER BY t.transaction_id DESC\n        LIMIT 1;\n    `;\n    return { json: { query: query, \"Output Query Execution Details\": false } };\n} else {\n    return {\n        json: {\n            result: $json.result || \"نتیجه‌ای یافت نشد\",\n            original: inputData\n        }\n    };\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        140
+      ],
+      "id": "af3109ea-6bbd-4de3-92a8-78a6648631af",
+      "name": "Make query"
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن اطلاعات از نود BOT TOKEN\nconst botData = $('BOT INFO').item.json; // خواندن داده‌های نود BOT TOKEN\nconst bottoken = botData[\"TOKEN\"] || \"تعیین نشده\"; // اضافه کردن مقدار توکن بات\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\";\nconst chat = botData[\"support-username\"];\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\";\nconst chatuserid = botData[\"ch-username\"] || \"یوزآیدی چنل تعریف نشده\";\n\n// استخراج اطلاعات کاربر (برای chat_id)\n// تغییر این خط برای گرفتن ID کاربر به صورت مستقیمش\nconst userData = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat.id ||\n                 $item(\"0\").$node[\"SIMORGH\"].json[\"message\"]?.chat.id;\n\n// دریافت مقدار original از نود قبلی\nconst inputData = $('Merge Switcher data').item.json.original;\n\n// دریافت اطلاعات کاربر\nconst userId = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat?.username || \n               $item(\"0\").$node[\"SIMORGH\"].json[\"message\"]?.from?.username;\n\n// دریافت موجودی کاربر از نود Request-to-db\nconst userBalance = $item(\"0\").$node[\"Request-to-db\"].json.balance || \"0\";\n\n// جدا کردن سه رقم سه رقم موجودی\nconst formattedBalance = userBalance.replace(/\\B(?=(\\d{3})+(?!\\d))/g, \",\");\n\n// دریافت نام کاربر از نود Request-to-db\nconst userName = $item(\"0\").$node[\"Request-to-db\"].json.name || \"نام تعریف نشده\";\n\n// تعریف پیام‌ها و دکمه‌های مربوط به هر مقدار original\nconst responses = {\n    \"userprofile^\": {\n        message: `نام شما: @${userId}\\nامتیاز شما: ${formattedBalance} اعتبار`,\n        buttons: [\n            [{ text: \"» بازگشت\", callback_data: \"userpanel^\" }]\n        ]\n    }\n    // می‌توانید کلیدواژه‌های دیگر را به اینجا اضافه کنید\n};\n\n// Check for the new \"tovote^\" input before the existing response branch\nif (inputData === \"tovote^\") {\n    const dbData = $item(\"0\").$node[\"Request-to-db\"].json;\n    // Ensure dbData exists as an object (season info is outside an array)\n    if (!dbData) {\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData, // updated to use the new chat id\n                text: \"Season data not available\",\n                parse_mode: \"HTML\"\n            }\n        };\n    }\n    const season = dbData;\n    const seasonTitle = season && season.name ? \"#\" + season.name.replace(/ /g, \"_\") : \"#UntitledSeason\";\n    let currentUser = null;\n    // Changed from season[\"aa users\"] to season.all_users\n    if (season.all_users) {\n        currentUser = season.all_users.find(u =>\n            (u.self_username ? u.self_username === userId : u.username === userId)\n        );\n    }\n    const currentUserBalance = currentUser ? (currentUser.self_balance || currentUser.balance) : \"0\";\n    \n    // Build inline keyboard: two buttons per row using names from season.all_users, with numbering\n    let buttons = [];\n    if (season.all_users) {\n        let counter = 1;\n        let tempRow = [];\n        season.all_users.forEach(u => {\n            // Skip current user entry if it contains the self identifier\n            if (u.self_id !== undefined) {\n                return; // skip self user\n            }\n            const displayName = `${counter}- ${u.name || u.self_name}`;\n            const uid = u.user_id || u.self_user_id;\n            tempRow.push({ text: displayName, callback_data: `tovote^${uid}` });\n            counter++;\n            if (tempRow.length === 2) {\n                buttons.push(tempRow);\n                tempRow = [];\n            }\n        });\n        if (tempRow.length > 0) {\n            buttons.push(tempRow);\n        }\n    }\n    // Add back button row at the end\n    buttons.push([{ text: \"» بازگشت\", callback_data: \"userpanel^\" }]);\n    \n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n            chat_id: userData, // updated to use the new chat id\n            text: `${seasonTitle}\\n\\nتو ${currentUserBalance} امتیاز داری که می‌تونی به دوستات بدی 🎁\\n\\nاز بین افراد زیر، به کی می‌خوای امتیاز بدی؟ 🤔`,\n            parse_mode: \"HTML\",\n            reply_markup: {\n                inline_keyboard: buttons\n            }\n        }\n    };\n} else if (inputData === 'givenpoints^') {\n    // Handle first page: show first 2 transactions only\n    const transactions = $item(\"0\").$node[\"Request-to-db\"].json;\n    if (transactions && Array.isArray(transactions.data) && transactions.data.length > 0 && transactions.data[0].transaction_id !== null) {\n        const txData = transactions.data;\n        const pageSize = 3;\n        const pageData = txData.slice(0, pageSize);\n        let message = `سلام ${txData[0].main_user_name} عزیز!\\n📌 امتیازهایی که دادی به این شرح زیر است:\\n\\n`;\n        pageData.forEach(tx => {\n            // Modified link generation using tx.message_id instead of tx.transaction_id\n            let link = tx.message_id ? `<a href=\"https://t.me/c/${chatuserid.replace('-100','')}/${tx.message_id}\">[لینک]</a>` : 'لینک ندارد';\n            message += `✅ شما ${tx.amount} امتیاز به ${tx.touser_name} دادید: ${link}\\n📄 ${tx.reason}\\n\\n`;\n        });\n        let buttons = [];\n        if (txData.length > pageSize) {\n            buttons.push([\n                { text: \"بازگشت\", callback_data: \"userpanel^\" },\n                { text: \"➡️ صفحه بعد\", callback_data: `givenpoints^${txData[pageSize].transaction_id}` }\n            ]);\n        } else {\n            // Always include \"بازگشت\" button if less than pageSize records\n            buttons.push([{ text: \"بازگشت\", callback_data: \"userpanel^\" }]);\n        }\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: message,\n                parse_mode: \"HTML\",\n                reply_markup: { inline_keyboard: buttons }\n            }\n        };\n    } else {\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: \"شما تا الان هیچ امتیازی ندادی!\",\n                parse_mode: \"HTML\",\n                reply_markup: {\n                    inline_keyboard: [\n                        [\n                            { text: \"بازگشت\", callback_data: \"historypoints^\" },\n                            { text: \"🎯 امتیاز بده!\", callback_data: \"tovote^\" }\n                        ]\n                    ]\n                }\n            }\n        };\n    }\n} else if (inputData.startsWith(\"givenpoints^\") && inputData !== \"givenpoints^\") {\n    // Handle subsequent pages: input format givenpoints^number\n    const parts = inputData.split(\"^\");\n    const startId = Number(parts[1]);\n    const transactions = $item(\"0\").$node[\"Request-to-db\"].json;\n    if (transactions && Array.isArray(transactions.data) && transactions.data.length > 0) {\n        const txData = transactions.data;\n        const pageSize = 2;\n        const startIndex = txData.findIndex(tx => tx.transaction_id === startId);\n        if (startIndex === -1) {\n            return {\n                url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n                method: \"POST\",\n                parameters: {\n                    message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                    chat_id: userData,\n                    text: \"موردی یافت نشد.\",\n                    parse_mode: \"HTML\"\n                }\n            };\n        }\n        const pageData = txData.slice(startIndex, startIndex + pageSize);\n        let message = `سلام ${pageData[0].main_user_name} عزیز!\\n📌 امتیازهایی که دادی به این شرح زیر است:\\n\\n`;\n        pageData.forEach(tx => {\n            // Modified link generation using tx.message_id instead of tx.transaction_id\n            let link = tx.message_id ? `<a href=\"https://t.me/c/${chatuserid.replace('-100','')}/${tx.message_id}\">[لینک]</a>` : 'لینک ندارد';\n            message += `✅ شما ${tx.amount} امتیاز به ${tx.touser_name} دادید: ${link}\\n📄 ${tx.reason}\\n\\n`;\n        });\n        let navButtons = [];\n        if (startIndex > 0) {\n            const prevIndex = Math.max(0, startIndex - pageSize);\n            navButtons.push({ text: \"⬅️ صفحه قبلی\", callback_data: `givenpoints^${txData[prevIndex].transaction_id}` });\n        }\n        if (startIndex + pageSize < txData.length) {\n            navButtons.push({ text: \"➡️ صفحه بعد\", callback_data: `givenpoints^${txData[startIndex + pageSize].transaction_id}` });\n        }\n        if (navButtons.length === 0) {\n            navButtons.push({ text: \"بازگشت\", callback_data: \"userpanel^\" });\n        } else if (navButtons.length === 1) {\n            navButtons.push({ text: \"بازگشت\", callback_data: \"userpanel^\" });\n        }\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: message,\n                parse_mode: \"HTML\",\n                reply_markup: { inline_keyboard: [ navButtons ] }\n            }\n        };\n    } else {\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: \"شما تا الان هیچ امتیازی ندادی!\",\n                parse_mode: \"HTML\",\n                reply_markup: {\n                    inline_keyboard: [\n                        [\n                            { text: \"بازگشت\", callback_data: \"historypoints^\" },\n                            { text: \"🎯 امتیاز بده!\", callback_data: \"tovote^\" }\n                        ]\n                    ]\n                }\n            }\n        };\n    }\n} else if (inputData === \"receivedpoints^\") {\n    // Handle first page for receivedpoints: show first 2 transactions only\n    const transactions = $item(\"0\").$node[\"Request-to-db\"].json;\n    if (transactions && Array.isArray(transactions.data) && transactions.data.length > 0) {\n        const txData = transactions.data;\n        const pageSize = 2;\n        const pageData = txData.slice(0, pageSize);\n        const mainName = pageData[0].touser_name;\n        let message = `سلام ${mainName}عزیز!\\n📌 امتیازهایی که بهت داده شده رو اینجا ببین:\\n\\n`;\n        pageData.forEach(tx => {\n            let transactionLink = \"\";\n            if (tx.message_id) {\n            const link = `https://t.me/c/${chatuserid.replace('-100','')}/${tx.message_id}`;\n            transactionLink = `<a href=\"${link}\">[لینک]</a>`;\n            } else {\n            transactionLink = \"لینک ندارد\";\n            }\n            message += `✅ ${tx.main_user_name} ${tx.amount} امتیاز بهت داده : ${transactionLink}\\n`;\n            message += `📄 ${tx.reason}\\n\\n`;\n        });\n        let buttons = [];\n        if (txData.length > pageSize) {\n            buttons.push([\n                { text: \"بازگشت\", callback_data: \"userpanel^\" },\n                { text: \"➡️ صفحه بعد\", callback_data: `receivedpoints^${txData[pageSize].transaction_id}` }\n            ]);\n        } else {\n            buttons.push([{ text: \"بازگشت\", callback_data: \"userpanel^\" }]);\n        }\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: message,\n                parse_mode: \"HTML\",\n                reply_markup: { inline_keyboard: buttons }\n            }\n        };\n    } else {\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: \"شما تا الان هیچ امتیازی دریافت نکردید!\",\n                parse_mode: \"HTML\",\n                reply_markup: { inline_keyboard: [[{ text: \"بازگشت\", callback_data: \"userpanel^\" }]] }\n            }\n        };\n    }\n} else if (inputData.startsWith(\"receivedpoints^\") && inputData !== \"receivedpoints^\") {\n    // Handle subsequent pages: input format receivedpoints^number\n    const parts = inputData.split(\"^\");\n    const startId = Number(parts[1]);\n    const transactions = $item(\"0\").$node[\"Request-to-db\"].json;\n    if (transactions && Array.isArray(transactions.data) && transactions.data.length > 0) {\n        const txData = transactions.data;\n        const pageSize = 2;\n        const startIndex = txData.findIndex(tx => tx.transaction_id === startId);\n        if (startIndex === -1) {\n            return {\n                url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n                method: \"POST\",\n                parameters: {\n                    message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                    chat_id: userData,\n                    text: \"موردی یافت نشد.\",\n                    parse_mode: \"HTML\"\n                }\n            };\n        }\n        const pageData = txData.slice(startIndex, startIndex + pageSize);\n        const mainName = pageData[0].touser_name;\n        let message = `سلام ${mainName} عزیز!\\n📌 امتیازهایی که بهت داده شده رو اینجا ببین:\\n\\n`;\n        pageData.forEach(tx => {\n            let transactionLink = \"\";\n            if (tx.message_id !== null && tx.message_id !== \"\") {\n                const link = `https://t.me/c/${chatuserid.replace('-100','')}/${tx.message_id}`;\n                transactionLink = `<a href=\"${link}\">[لینک]</a>`;\n            } else {\n                transactionLink = \"لینک ندارد\";\n            }\n            message += `✅ ${tx.main_user_name} ${tx.amount} امتیاز بهت داده : ${transactionLink}\\n`;\n            message += `📄 ${tx.reason}\\n\\n`;\n        });\n        let navButtons = [];\n        if (startIndex > 0) {\n            const prevIndex = Math.max(0, startIndex - pageSize);\n            navButtons.push({ text: \"⬅️ صفحه قبلی\", callback_data: `receivedpoints^${txData[prevIndex].transaction_id}` });\n        }\n        if (startIndex + pageSize < txData.length) {\n            navButtons.push({ text: \"➡️ صفحه بعد\", callback_data: `receivedpoints^${txData[startIndex + pageSize].transaction_id}` });\n        }\n        if (navButtons.length === 0) {\n            navButtons.push({ text: \"بازگشت\", callback_data: \"userpanel^\" });\n        } else if (navButtons.length === 1) {\n            navButtons.push({ text: \"بازگشت\", callback_data: \"userpanel^\" });\n        }\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: message,\n                parse_mode: \"HTML\",\n                reply_markup: { inline_keyboard: [ navButtons ] }\n            }\n        };\n    } else {\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: \"شما تا الان هیچ امتیازی دریافت نکردید!\",\n                parse_mode: \"HTML\",\n                reply_markup: { inline_keyboard: [[{ text: \"بازگشت\", callback_data: \"userpanel^\" }]] }\n            }\n        };\n    }\n} else if (inputData.startsWith(\"tovote^\") && inputData !== \"tovote^\") {\n    const parts = inputData.split(\"^\");\n    let extract_name = \"\";\n    if (parts.length === 3 && !isNaN(Number(parts[2]))) {\n        // Case: \"tovote^ID^number\" → extract name from message text\n        let voteAmount = Number(parts[2]);\n        let rawBalance = $item(\"0\").$node[\"Request-to-db\"].json.balance || \"0\";\n        let balanceValue = parseInt(rawBalance, 10);\n        if (voteAmount <= balanceValue) {\n            const simText = $('SIMORGH').item.json.callback_query.message.text;\n            let match = simText.match(/به\\s+(.*?)\\s+هستید/);\n            extract_name = match ? match[1] : \"\";\n            // Remove leading digits, possible spaces, hyphen and spaces\n            extract_name = extract_name.replace(/^(?:\\d+\\s*\\-\\s*)/, \"\");\n            // Additionally remove a leading \"امین\" if present\n            extract_name = extract_name.replace(/^امین\\s*/, \"\");\n            // Fallback if extraction returns empty\n            if (!extract_name) {\n                let fallback = simText.match(/به\\s+(.+?)\\s+\\d+\\s+امتیاز/);\n                extract_name = fallback ? fallback[1] : \"\";\n                extract_name = extract_name.replace(/^(?:\\d+\\s*\\-\\s*)/, \"\");\n                extract_name = extract_name.replace(/^امین\\s*/, \"\");\n            }\n            const msg = `شما میخوای به ${extract_name}، ${voteAmount} امتیاز بدی!\\n\\n💬 علت امتیاز رو روی همین پیام ریپلای کن.`;\n            return {\n                url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n                method: \"POST\",\n                parameters: {\n                    message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                    chat_id: userData,\n                    text: msg,\n                    parse_mode: \"HTML\",\n                    reply_markup: {\n                        inline_keyboard: [[{ text: \"انصراف\", callback_data: `Cancel^${parts[1]}^${parts[2]}` }]]\n                    }\n                }\n            };\n        }\n    } else if (parts.length === 2) {\n        // Case: \"tovote^ID\" → extract name from callback_data (inline_keyboard)\n        let replyMarkup = $('SIMORGH').item.json.callback_query.message.reply_markup;\n        let inlineButtons = replyMarkup.inline_keyboard;\n        for (let row of inlineButtons) {\n            for (let btn of row) {\n                if (btn.callback_data === inputData) {\n                    // Remove leading digits, hyphen and spaces from the button text\n                    extract_name = btn.text.replace(/^(?:\\d+\\s*-\\s*)/, \"\");\n                    break;\n                }\n            }\n        }\n        // Build inline keyboard buttons from 1 to balance (3 per row)\n        let rawBalance = $item(\"0\").$node[\"Request-to-db\"].json.balance || \"0\";\n        let balanceValue = parseInt(rawBalance, 10);\n        if (balanceValue > 0) {\n            let numberButtons = [];\n            let tempRow = [];\n            for (let i = 1; i <= balanceValue; i++) {\n                tempRow.push({ text: i.toString(), callback_data: `${inputData}^${i}` });\n                if (tempRow.length === 3) {\n                    numberButtons.push(tempRow);\n                    tempRow = [];\n                }\n            }\n            if (tempRow.length > 0) {\n                numberButtons.push(tempRow);\n            }\n            numberButtons.push([{ text: \"» بازگشت\", callback_data: \"userpanel^\" }]);\n            const msg = `شما در حال امتیاز دادن به ${extract_name} هستید!\\n\\nدرحال حاضر شما ${rawBalance} امتیاز دارید که میتوانید استفاده کنید.\\n\\nلطفا مقدار امتیازی که میخوای بدی رو انتخاب کن :`;\n            return {\n                url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n                method: \"POST\",\n                parameters: {\n                    message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                    chat_id: userData,\n                    text: msg,\n                    parse_mode: \"HTML\",\n                    reply_markup: { inline_keyboard: numberButtons }\n                }\n            };\n        } else {\n            // No balance\n            return {\n                url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n                method: \"POST\",\n                parameters: {\n                    message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                    chat_id: userData,\n                    text: \"شما همه امتیازات خود را خرج کرده‌اید!\",\n                    parse_mode: \"HTML\",\n                    reply_markup: {\n                        inline_keyboard: [\n                            [{ text: \"امتیازهایی که دادید\", callback_data: \"givenpoints^\" }],\n                            [{ text: \"» بازگشت\", callback_data: \"userpanel^\" }]\n                        ]\n                    }\n                }\n            };\n        }\n    }\n} else if (inputData === \"Scoreboard^\") { // modified branch for scoreboard message\n    const scoreboard = $item(\"0\").$node[\"Request-to-db\"].json.data;\n    if (!(scoreboard && Array.isArray(scoreboard))) {\n        return {\n            url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n            method: \"POST\",\n            parameters: {\n                message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n                chat_id: userData,\n                text: \"داده‌ای برای رتبه‌بندی وجود ندارد.\",\n                parse_mode: \"HTML\"\n            }\n        };\n    }\n    // Sort by sum_amount (converted to number) descending\n    scoreboard.sort((a, b) => Number(b.sum_amount) - Number(a.sum_amount));\n    \n    let message = \"رتبه‌بندی امتیازات:\\n\\n\";\n    let rank = 0, counter = 0, prevScore = null;\n    scoreboard.forEach(item => {\n        counter++;\n        const score = Number(item.sum_amount);\n        if (prevScore === null || score !== prevScore) {\n            rank = counter;\n        }\n        let medal = \"\";\n        if (rank === 1) {\n            medal = \"🥇 \";\n        } else if (rank === 2) {\n            medal = \"🥈 \";\n        } else if (rank === 3) {\n            medal = \"🥉 \";\n        }\n        prevScore = score;\n        let displayName = item.touser_name;\n        // Spoiler the name if userData matches touser_user_id\n        if (Number(userData) === item.touser_user_id) {\n            displayName = `<tg-spoiler>${displayName}</tg-spoiler>`;\n        }\n        message += `${rank}- ${medal}${displayName} ${score}\\n`;\n    });\n    \n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n            chat_id: userData,\n            text: message,\n            parse_mode: \"HTML\",\n            reply_markup: {\n                inline_keyboard: [\n                    [{ text: \"بازگشت\", callback_data: \"userpanel^\" }]\n                ]\n            }\n        }\n    };\n} else if (inputData === \"userprofile^\") {\n    const dbData = $item(\"0\").$node[\"Request-to-db\"].json;\n    const userProfile = Array.isArray(dbData) ? dbData[0] : dbData;\n    const balance = userProfile.user_balance || 0;\n    const totalAmount = userProfile.total_amount == null ? 0 : userProfile.total_amount;\n    const message = `سلام ${userName} عزیز!✌🏻\n\n💰 اعتبار شما: ${balance}\n🏆 امتیازات دریافتی تا این لحظه: ${totalAmount}`;\n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n            chat_id: userData,\n            text: message,\n            parse_mode: \"HTML\",\n            reply_markup: {\n                inline_keyboard: [\n                    [{ text: \"بازگشت\", callback_data: \"userpanel^\" }]\n                ]\n            }\n        }\n    };\n} else if (inputData.startsWith(\"Confirm^\")) {\n    // Assume the output of the \"Request-to-db\" node is already available\n    const dbRes = $item(\"0\").$node[\"Request-to-db\"].json;\n    let message = \"\";\n    let keyboard = [];\n    if (dbRes) {\n        let res = Array.isArray(dbRes) ? dbRes[0] : dbRes;\n        if (res.Insufficientcredit === 'true') {\n            message = `اعتبار شما برای رای دادن به ${res.touser_name} کافی نیست!`;\n            keyboard = [\n                [{ text: \"پشتیبانی اعتبار من\", callback_data: \"userprofile^\" }],\n                [{ text: \"برگشت\", callback_data: \"userpanel^\" }]\n            ];\n        } else if (res.amount && res.touser_name) {\n            message = `شما ${res.amount} امتیاز به ${res.touser_name} دادی! و نوشتی: ${res.reason}`;\n            keyboard = [\n                [ \n                    {text: \"بازگشت\", callback_data: \"userpanel^\" },\n                    { text: \"ردپای امتیازات 👣\", callback_data: \"historypoints^\" }\n               ]\n            ];\n        } else {\n            message = \"نتیجه‌ای دریافت نشد.\";\n            keyboard = [[{ text: \"برگشت\", callback_data: \"userpanel^\" }]];\n        }\n    }\n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n            chat_id: userData,\n            text: message,\n            parse_mode: \"HTML\",\n            reply_markup: {\n                inline_keyboard: keyboard\n            }\n        }\n    };\n} else if (responses[inputData]) {\n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n            chat_id: userData, // updated to use the new chat id\n            text: responses[inputData].message,\n            parse_mode: \"HTML\",\n            reply_markup: {\n                inline_keyboard: responses[inputData].buttons // دکمه‌ها را جداگانه قرار می‌دهد تا زیر هم باشند\n            }\n        }\n    };\n}\n\n// مقدار پیش‌فرض در صورتی که مقدار original در لیست نبود\nreturn {\n    url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n    method: \"POST\",\n    parameters: {\n        message_id: $('SIMORGH').item.json.callback_query.message.message_id,\n        chat_id: userData, // updated to use the new chat id\n        text: `${$json.result}\\noriginal: ${inputData}`,\n        parse_mode: \"HTML\"\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        140
+      ],
+      "id": "1e44cb54-b9b2-46e7-b20e-6c0dfbc48426",
+      "name": "Make Menu Message2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.query }}\n",
+        "options": {
+          "detailedOutput": "={{ $json[\"Output Query Execution Details\"] }}"
+        }
+      },
+      "id": "57689e53-fd77-458e-a49d-c60b4bf669e5",
+      "name": "Request-to-db",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        1520,
+        140
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "mySql": {
+          "id": "pZDfMlNbrmUUGmXF",
+          "name": "Simorgh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.parameters }}",
+        "options": {}
+      },
+      "id": "bd5c832d-283c-4e83-ba66-5b76108cfff6",
+      "name": "SEND result Click Menu Layer 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1880,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// تعریف لیست‌ها\nconst firstList = [\"help^\", \"userpanel^\", \"historypoints^\", \"joinedch^\"];\nconst secondList = [\"userprofile^\", \"tovote^\", \"givenpoints^\", \"receivedpoints^\", \"Scoreboard^\"];\n// لیست استثناپات\nconst exceptionList = {\n  \"Confirm^\": (inp) => inp,  // برای مواردی که با Confirm^ شروع می‌شود، خروجی همان ورودی خواهد بود\n  \"givenpoints^\": (inp) => inp, // برای مواردی که با givenpoints^ شروع می‌شود، خروجی همان ورودی خواهد بود\n  \"receivedpoints^\": (inp) => inp  // برای مواردی که با receivedpoints^ شروع می‌شود، خروجی همان ورودی خواهد بود\n};\n\n// داده ورودی\nconst inputData = $('SIMORGH').item.json.callback_query.data;\n\n// بررسی اینکه ورودی در کدام یک از لیست‌ها قرار دارد\nlet result = \"\";\nif (inputData.startsWith(\"Cancel^\")) {\n  result = \"menu\";\n} else if (inputData.startsWith(\"Confirm^\")) {\n  result = \"requesttodb\";\n} else if (inputData.startsWith(\"givenpoints^\")) {\n  result = \"requesttodb\";  // new branch for givenpoints^ inputs\n} else if (inputData.startsWith(\"receivedpoints^\")) {\nresult = \"requesttodb\";  // new branch for givenpoints^ inputs\n} else if (firstList.includes(inputData)) {\n  result = \"menu\";  // اگر ورودی در لیست اول باشد\n} else if (inputData.startsWith(\"tovote^\")) {\n  result = \"requesttodb\";  // اگر ورودی با tovote^ شروع شود\n} else if (secondList.includes(inputData)) {\n  result = \"requesttodb\";  // حالت پیشفرض برای موارد موجود در دومین لیست\n} else {\n  result = \"نیست\";  // اگر ورودی در هیچ کدام از لیست‌ها نباشد\n}\n\n// تعیین original بر اساس لیست استثناپات\nlet originalValue = inputData.startsWith(\"Cancel^\") ? \"userpanel^\" : inputData;\nfor (const prefix in exceptionList) {\n  if (inputData.startsWith(prefix)) {\n    originalValue = exceptionList[prefix](inputData);\n    break;\n  }\n}\n\nreturn [{\n  result: result,\n  original: originalValue\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        120
+      ],
+      "id": "1efa2adf-4673-48c2-8cd9-da533b84de9f",
+      "name": "Merge Switcher data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $('SIMORGH').item.json.message;\n\n// If there's a reply and its callback_data starts with \"Cancel^\", return the reply_text.\nif (message.reply_to_message && \n    message.reply_to_message.reply_markup && \n    message.reply_to_message.reply_markup.inline_keyboard &&\n    message.reply_to_message.reply_markup.inline_keyboard[0] &&\n    message.reply_to_message.reply_markup.inline_keyboard[0][0] &&\n    message.reply_to_message.reply_markup.inline_keyboard[0][0].callback_data &&\n    message.reply_to_message.reply_markup.inline_keyboard[0][0].callback_data.startsWith(\"Cancel^\")\n) {\n  return [{\n    result: \"Confirm\",\n    original: message.text,\n    reply_text: message.reply_to_message.text\n  }];\n}\n\nconst inputData = message.text;\n\nconst result = (inputData === \"/start\" , \"/start start\") ? \"start-bot\" \n             : (inputData === \"/tools\") ? \"tools-bot\" \n             : \"نیست\";\n\nreturn [{\n  result: result,\n  original: inputData\n}];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        600
+      ],
+      "id": "88f569da-328b-4dfe-804f-c5ea05a83c4a",
+      "name": "Merge Switcher text"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Merge Switcher text').item.json.result }}",
+                    "rightValue": "=start-bot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fdf6ce2b-aec6-47ca-abf8-f59826247e61",
+                    "leftValue": "={{ $('Merge Switcher text').item.json.result }}",
+                    "rightValue": "tools-bot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "=Tools"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "646e53f4-90b2-4722-aa0c-3c743c5aa0e2",
+                    "leftValue": "={{ $('Merge Switcher text').item.json.result }}",
+                    "rightValue": "Confirm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Confirm"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        840,
+        600
+      ],
+      "id": "b34d4fed-055b-4518-9930-a1c4a6359bd3",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن اطلاعات از نود BOT TOKEN\nconst botData = $('BOT INFO').item.json;\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\";\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\";\nconst botadmin = botData[\"admin-username\"] || \"ادمین ندارد\";\n\n// گرفتن اطلاعات کاربر\nconst inputData = $('Merge Switcher text').item.json.original;\nconst userData = $('SIMORGH').item.json.message.from;\nconst isAdmin = userData[\"id\"] === botadmin;\n\n// تعریف پیام‌ها و دکمه‌ها\nconst responses = {\n  \"/start\": {\n    \"start\": {\n      message: `کاربر گرامی\\nلطفا یکی از گزینه‌های زیر رو برای ${botName} انتخاب کنید :`,\n      buttons: [\n        [{ text: \"🎯 امتیازدهی به دیگران\", callback_data: \"tovote^\" }],\n        [\n          { text: \"» پروفایل شما\", callback_data: \"userprofile^\" },\n          { text: \"ردپای امتیازات\", callback_data: \"historypoints^\" }\n        ],\n        [\n          { text: \"» راهنما\", callback_data: \"help^\" },\n          { text: \"» پشتیبانی\", url: `${botsupport}` }\n        ]\n      ]\n    }\n  },\n  \"admin_panel\": {\n    message: `ادمین گرامی\\nبه پنل مدیریت ${botName} خوش آمدید :`,\n    buttons: [\n      [{ text: \"» مدیریت کاربران\", callback_data: \"manageusers^\" }],\n      [{ text: \"» گزارش‌ها\", callback_data: \"reports^\" }],\n      [{ text: \"» تنظیمات\", callback_data: \"settings^\" }]\n    ]\n  }\n};\n\n// تصمیم‌گیری بر اساس inputData\nlet response;\n\nif (inputData === \"/start\" || inputData === \"/start start\") {\n  if (isAdmin) {\n    response = responses[\"admin_panel\"];\n  } else {\n    response = responses[\"/start\"][\"start\"];\n  }\n}\n\nif (response) {\n  return {\n    json: {\n      message: response.message,\n      reply_markup: {\n        inline_keyboard: response.buttons\n      },\n      parse_mode: \"HTML\"\n    }\n  };\n}\n\n// مقدار پیش‌فرض اگر چیزی پیدا نشد\nreturn {\n  json: {\n    result: $json.result,\n    original: inputData\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        360
+      ],
+      "id": "b8b5cfa5-4eb5-4c15-ac58-fb185f34ebf1",
+      "name": "Make Menu Message1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('BOT INFO').item.json.TOKEN }}/SendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('SIMORGH').item.json.message.from.id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('Make Menu Message1').item.json.message }}"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ $('Make Menu Message1').item.json.reply_markup }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "={{ $('Make Menu Message1').item.json.parse_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d6b4abb5-b432-4c81-b73b-4f8e637fd4bb",
+      "name": "SEND result Click Menu Layer ",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1220,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن اطلاعات از نود BOT TOKEN\nconst botData = $('BOT INFO').item.json; // خواندن داده‌های نود BOT TOKEN\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\"; // دریافت نام بات\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\"; // دریافت یوزرنیم پشتیبانی\nconst botadmin = botData[\"admin-username\"] || \"ادمین ندارد\"; // دریافت یوزرنیم ادمین\n\n// دریافت مقدار original از نود قبلی\nconst inputData = $('Merge Switcher text').item.json.original;\nconst userData = $('SIMORGH').item.json.message.from; // فرض کنید اطلاعات کاربر را از نود User Info می‌گیرید\nconst isAdmin = userData[\"id\"] === botadmin; // بررسی اینکه کاربر ادمین است یا نه\n\n// تعریف پیام‌ها و دکمه‌های مربوط به هر مقدار original\nconst responses = {\n    \"/tools\": {\n        message: `کاربر گرامی\\nلطفا یکی از گزینه‌های زیر رو برای ${botName} انتخاب کنید :`,\n        buttons: [\n            [{ text: \"اطلاعات پایه 🦵\", callback_data: \"baseinfo^\" }],\n            [{ text: \"تاریخچه \", callback_data: \"historytools^\" }],\n            [\n                { text: \"» راهنما\", callback_data: \"helptools^\" },\n                { text: \"» پشتیبانی\", url: `${botsupport}` }\n            ]\n        ]\n    }\n};\n// بررسی اینکه مقدار original در لیست پاسخ‌های ما وجود دارد یا نه\nif (responses[inputData]) {\n    const response = responses[inputData];\n    return {\n        json: {\n            message: response.message,\n            reply_markup: {\n                inline_keyboard: response.buttons // دکمه‌ها را جداگانه قرار می‌دهد تا زیر هم باشند\n            },\n            parse_mode: \"HTML\"\n        }\n    };\n}\n\n// مقدار پیش‌فرض در صورتی که مقدار original در لیست نبود\nreturn {\n    json: {\n        result: $json.result,\n        original: inputData\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        600
+      ],
+      "id": "7e9b80d5-baec-4d45-b4b4-17922b82ea78",
+      "name": "Make Menu Message3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('BOT INFO').item.json.TOKEN }}/SendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('SIMORGH').item.json.message.from.id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('Make Menu Message3').item.json.message }}"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ $('Make Menu Message3').item.json.reply_markup }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "={{ $('Make Menu Message3').item.json.parse_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d23d4446-1371-46ae-972c-7f14919822fb",
+      "name": "SEND result Click Menu Layer 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن اطلاعات از نود BOT TOKEN\nconst botData = $('BOT INFO').item.json; // خواندن داده‌های نود BOT TOKEN\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\"; // دریافت نام بات\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\"; // دریافت یوزرنیم پشتیبانی\n\n// دریافت داده‌های ورودی به عنوان payload\nconst payload = $('SIMORGH').item.json;\nlet inputData;\n// تعیین منبع JSON: پیام یا کال‌بک\nif (payload.message) {\n    inputData = payload.message.from.id;\n} else if (payload.callback_query) {\n    inputData = payload.callback_query.from.id;\n} else {\n    inputData = null;\n}\n\n// تعیین اطلاعات ادمین (برای نوتیفای)\nlet adminUsername, adminUserId;\nif (payload.callback_query) {\n    adminUsername = payload.callback_query.from.username || payload.callback_query.from.id;\n    adminUserId = payload.callback_query.from.id;\n} else if (payload.message) {\n    adminUsername = payload.message.from.username || payload.message.from.id;\n    adminUserId = payload.message.from.id;\n} else {\n    adminUsername = \"نامشخص\";\n    adminUserId = \"نامشخص\";\n}\n\n// لیست اطلاعات کاربران\nconst users = [\n    {\"id\": 1, \"name\": \"علی معمار\", \"user_id\": 97164371},\n    {\"id\": 2, \"name\": \"مهدی حسینی\", \"user_id\": 83553051},\n    {\"id\": 3, \"name\": \"حسین انگاشته\", \"user_id\": 1939118028},\n    {\"id\": 4, \"name\": \"هانی رضایی\", \"user_id\": 438311561},\n    {\"id\": 5, \"name\": \"یاسین ولی\", \"user_id\": 84316833},\n    {\"id\": 6, \"name\": \"محمدرضا معمار\", \"user_id\": 110549011},\n    {\"id\": 7, \"name\": \"حسین هاشمیان\", \"user_id\": 110344197},\n    {\"id\": 8, \"name\": \"بهزاد اصفهانی\", \"user_id\": 422626662},\n    {\"id\": 9, \"name\": \"مجید ده‌نمکی\", \"user_id\": 274432130},\n    {\"id\": 10, \"name\": \"علی اخباری\", \"user_id\": 245149665},\n    {\"id\": 11, \"name\": \"سعید امیدی\", \"user_id\": 222807547},\n    {\"id\": 12, \"name\": \"محمد تقی زاده\", \"user_id\": 150800621},\n    {\"id\": 13, \"name\": \"مصطفی حسینخانی\", \"user_id\": 126164042},\n    {\"id\": 14, \"name\": \"امیرحسین باقرزاده\", \"user_id\": 7699849418},\n    {\"id\": 15, \"name\": \"مصطفی فتحی\", \"user_id\": 110702431},\n    {\"id\": 16, \"name\": \"حسین علی عسگری\", \"user_id\": 283552388},\n    {\"id\": 17, \"name\": \"مهدی سعیدی\", \"user_id\": 516218590},\n    {\"id\": 18, \"name\": \"مرتضی پورحسین\", \"user_id\": 1423078300},\n    {\"id\": 19, \"name\": \"رحمان شمسی\", \"user_id\": 6987405825},\n    {\"id\": 20, \"name\": \"محمدجواد کریمی\", \"user_id\": 7479456283},\n    {\"id\": 21, \"name\": \"محمدرضا مهاجرنیا\", \"user_id\": 92903851},\n    {\"id\": 22, \"name\": \"آوا قاسمی\", \"user_id\": 7415375623},\n    {\"id\": 23, \"name\": \"علی معماری\", \"user_id\": 121713560},\n    {\"id\": 24, \"name\": \"میلاد نیک آزما\", \"user_id\": 5616348466},\n    {\"id\": 26, \"name\": \"سپهر شعبانی\", \"user_id\": 1816545723},\n    {\"id\": 27, \"name\": \"احمد کمالی\", \"user_id\": 7091595139},\n    {\"id\": 28, \"name\": \"علی پور بهروزان\", \"user_id\": 7868874927},\n    {\"id\": 29, \"name\": \"مجید فاضلی\", \"user_id\": 416031526},\n    {\"id\": 30, \"name\": \"علی دهقانی\", \"user_id\": 1003089783},\n    {\"id\": 31, \"name\": \"حامد قربانی\", \"user_id\": 191620139},\n    {\"id\": 33, \"name\": \"فرزین مجد\", \"user_id\": 6010489050},\n    {\"id\": 34, \"name\": \"حسین عرب\", \"user_id\": 1737639707},\n    {\"id\": 35, \"name\": \"فاطمه فرمان زاده\", \"user_id\": 7560974272},\n    {\"id\": 36, \"name\": \"رضا خلعتبری\", \"user_id\": 815221436},\n    {\"id\": 37, \"name\": \"مصطفی طحان نژاد\", \"user_id\": 1453634941},\n    {\"id\": 38, \"name\": \"علی احمدی\", \"user_id\": 97650917},\n    {\"id\": 39, \"name\": \"توحید لطفی\", \"user_id\": 46059517},\n    {\"id\": 40, \"name\": \"محسن رجبی\", \"user_id\": 185330596},\n    {\"id\": 41, \"name\": \"حمید شهباری\", \"user_id\": 103743033},\n    {\"id\": 42, \"name\": \"امین فاطمی\", \"user_id\": 74979638},\n    {\"id\": 43, \"name\": \"مجتبی شاقی\", \"user_id\": 6693154859},\n    {\"id\": 44, \"name\": \"پویا رحیمی\", \"user_id\": 7709912372},\n    {\"id\": 45, \"name\": \"علی خانچرلی\", \"user_id\": 315867518},\n    {\"id\": 46, \"name\": \"زهرا هاشم پور\", \"user_id\": 180497899},\n    {\"id\": 47, \"name\": \"محمدامین چراغیان\", \"user_id\": 882730020},\n    {\"id\": 48, \"name\": \"مجید سیفی\", \"user_id\": 5734904638},\n    {\"id\": 49, \"name\": \"امین هواسی\", \"user_id\": 368739228},\n    {\"id\": 50, \"name\": \"مجید سعیدی\", \"user_id\": 516218590},\n    {\"id\": 51, \"name\": \"فاطمه اجیلی\", \"user_id\": 106583524},\n    {\"id\": 52, \"name\": \"محسن شمسی\", \"user_id\": 3470979539},\n    {\"id\": 54, \"name\": \"سینا\", \"user_id\": 135385832},\n    {\"id\": 55, \"name\": \"آرش سالاری\", \"user_id\": 229038702},\n    {\"id\": 56, \"name\": \"آرش سالاری\", \"user_id\": 229038702},\n    {\"id\": 57, \"name\": \"امین دوم\", \"user_id\": 7534724248},\n    {\"id\": 58, \"name\": \"آرش ملک تاجی\", \"user_id\": 5124754671},\n    {\"id\": 59, \"name\": \"محمد بهمنیار\", \"user_id\": 6741300396},\n    {\"id\": 61, \"name\": \"مهدی اعتمادی\", \"user_id\": 1985282555},\n    {\"id\": 62, \"name\": \"محسن کهندانی\", \"user_id\": 135819842},\n    {\"id\": 63, \"name\": \"محمدجواد موسوی\", \"user_id\": 101250034},\n      {\"id\": 64, \"name\": \"حسام قدیری\", \"user_id\": 6434872716},\n        {\"id\": 64, \"name\": \"مصطفی عسکری\", \"user_id\": 1132635555},\n   {\"id\": 64, \"name\": \"حمیدشهبازی\", \"user_id\": 5914461309},\n     {\"id\": 64, \"name\": \"نور سجادی\", \"user_id\": 7146836414},\n       {\"id\": 64, \"name\": \"حسین زرگر\", \"user_id\": 192204657},\n         {\"id\": 64, \"name\": \"محمد لاجوردی\", \"user_id\": 6316472362},\n     {\"id\": 64, \"name\": \"فاطمه ناصری\", \"user_id\": 5090731432},\n       {\"id\": 64, \"name\": \"فاطمه نمازیان\", \"user_id\": 5725831272},\n           {\"id\": 64, \"name\": \"مینا میرجلیلی\", \"user_id\": 88094478},\n  {\"id\": 64, \"name\": \"مهدی غلامی\", \"user_id\": 241885704},\n   {\"id\": 64, \"name\": \"محمدرضا جهان‌نما\", \"user_id\": 410271064},\n  {\"id\": 64, \"name\": \"میثم حسنی\", \"user_id\": 95238384},\n   {\"id\": 64, \"name\": \"سمیرا محمدزاده\", \"user_id\": 5488361676}\n  ];\n\n// پیدا کردن کاربری که user_id برابر با مقدار inputData هست\nconst user = users.find(u => u.user_id === inputData);\n\n// بررسی اینکه کاربر وجود داره یا نه\nif (user) {\n    return {\n        json: {\n            ...user, // اطلاعات کاربر\n            access: true // اضافه کردن فیلد access با مقدار true\n        }\n    };\n}\n\n// وقتی کاربر پیدا نشد، دو پاسخ ارسال میشه (مسیج اصلی + notify-admin register)\nreturn {\n    json: {\n        // مسیج قبلی برای اطلاع به کاربر\n        message: `متاسفانه شما به ${botName} دسترسی ندارید. برای دریافت دسترسی، لطفا درخواست خود را به پشتیبانی ارسال کنید.`,\n        reply_markup: {\n            inline_keyboard: [\n                [{ text: \"درخواست دسترسی از پشتیبانی\", url: `${botsupport}` }]\n            ]\n        },\n        parse_mode: \"HTML\",\n        access: false,\n        // نوتیفیکیشن اول برای ادمین (قبول/رد درخواست)\n        notify_admin: {\n            text: `یک کاربر با مشخصات:\\nنام: ${adminUsername}\\nآیدی: ${adminUserId}\\nربات را استارت کرده که عضو لیست نمی‌باشد. چه واکنشی نشان می‌دهید؟`,\n            reply_markup: {\n                inline_keyboard: [\n                    [\n                        { text: \"پذیرش\", callback_data: \"notify-admin-accept:\" + adminUserId },\n                        { text: \"رد\", callback_data: \"notify-admin-reject:\" + adminUserId }\n                    ]\n                ]\n            }\n        },\n        // نوتیفیکیشن دوم برای ثبت کاربر جدید با هایپرلینک کردن آیدی\n        notify_admin_register: {\n            text: `کاربر جدید شناسایی شد!\\nکاربری با آیدی <a href=\"https://telegram.me/${adminUsername}\">${adminUserId}</a> وارد ربات شده است که در لیست ثبت نشده است.\\nآیا می‌خواهید این کاربر را ثبت کنید؟`,\n            reply_markup: {\n                inline_keyboard: [\n                    [\n                      { text: \"رد\", callback_data: \"notify-admin-reject:\" + adminUserId },\n                        { text: \"ثبت کاربر\", callback_data: \"notify-admin-register:\" + adminUserId }\n                    ]\n                ]\n            }\n        }\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        320
+      ],
+      "id": "376ada55-24f3-4bac-9d5f-26d7e2a7d366",
+      "name": "Check User Exist List"
+    },
+    {
+      "parameters": {
+        "content": "## آپدیت شود\nبا اضافه شدن هر یوزر این باید آپدیت بشه",
+        "width": 190,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        220
+      ],
+      "typeVersion": 1,
+      "id": "27dcc968-325d-4d7d-92d6-026b23a67b96",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c6e90657-95f5-4145-99f1-26f6aed6da16",
+              "leftValue": "={{ $json.access }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        320
+      ],
+      "id": "87a3a189-a7fb-4aa6-b464-84e3a8b30c05",
+      "name": "IF EXIST True"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('BOT INFO').item.json.TOKEN }}/SendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('SIMORGH').item.json.message?.from?.id || $('SIMORGH').item.json.callback_query?.from?.id || 'False' }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ $json.reply_markup }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "={{ $json.parse_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ab0fd16c-9ddd-4ffa-a5d5-e8420242b8ab",
+      "name": "SEND Reject Message To-User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -40,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('BOT INFO').item.json.TOKEN }}/SendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('BOT INFO').item.json['admin-username'] }}"
+            },
+            {
+              "name": "=text",
+              "value": "={{ $('IF EXIST True').item.json.notify_admin_register.text }}"
+            },
+            {
+              "name": "=reply_markup",
+              "value": "={{ $('IF EXIST True').item.json.notify_admin_register.reply_markup }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "={{ $('Check User Exist List').item.json.parse_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f5a4a72d-a330-4959-aaa2-83a5a1515fdb",
+      "name": "Notify admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// اضافه کردن متغیرهای جدید\nconst botData = $('BOT INFO').item.json; // خواندن داده‌های نود BOT TOKEN\nconst bottoken = botData[\"TOKEN\"] || \"تعیین نشده\"; // اضافه کردن مقدار توکن بات\nconst botName = botData[\"bot-name\"] || \"نام بات تعریف نشده\";\nconst chat = botData[\"support-username\"];\nconst botsupport = botData[\"support-username\"] || \"پشتیبانی ندارد\";\nconst chatuserid = botData[\"ch-username\"] || \"یوزآیدی چنل تعریف نشده\";\n\n// استخراج اطلاعات کاربر (برای chat_id)\nconst userData = $item(\"0\").$node[\"SIMORGH\"].json[\"callback_query\"]?.message?.chat.id ||\n                 $item(\"0\").$node[\"SIMORGH\"].json[\"message\"]?.chat.id;\n\n// دریافت مقدار و سایر فیلدهای ورودی از نود قبلی\nconst jsonData = $('Merge Switcher text').item.json; // شامل result, reply_text, original, ...\n// تغییر استفاده به reply_text\nconst inputText = jsonData.reply_text;\n\nif(jsonData.result === \"Confirm\") {\n    // استخراج نام کاربری هدف (touser_name) از reply_text\n    const touser_name_match = inputText.match(/شما\\s+میخوای\\s+به\\s+(.*?)،/);\n    const touser_name = touser_name_match ? touser_name_match[1] : \"نام نامشخص\";\n    \n    // گرفتن دلیل (reason) از متن پیام SIMORGH\n    const reason = $('SIMORGH').item.json.message.text;\n    \n    // تلاش برای گرفتن reply_markup از reply_to_message یا message.reply_to_message به عنوان fallback\n    let replyMarkup = $('SIMORGH').item.json.reply_to_message?.reply_markup ||\n                      $('SIMORGH').item.json.message?.reply_to_message?.reply_markup;\n    if (!replyMarkup || !replyMarkup.inline_keyboard || !replyMarkup.inline_keyboard[0] || !replyMarkup.inline_keyboard[0][0]) {\n        throw new Error(\"Missing inline_keyboard data in reply_to_message\");\n    }\n    const callbackData = replyMarkup.inline_keyboard[0][0].callback_data;\n    const parts = callbackData.split('^');\n    const touser_id = parts[1];\n    const amount = parts[2];\n    \n    // ساخت متن پیام جدید\n    const messageText = `شما قصد دارید به ${touser_name} ${amount} امتیاز بدهید.\\n\\n---------------------------------\\nدلیل :‌ ${reason}\\n---------------------------------\\n\\nاگر متن مناسب است، روی دکمه «تایید» کلیک کنید تا امتیاز ثبت شود.\\nدر غیر این صورت، می‌توانید پیام خود را ویرایش کنید.`;\n    \n    // ایجاد دکمه‌های شیشه‌ای جدید\n    const inline_keyboard = [\n       [\n         { text: \"✏️ ویرایش\", callback_data: `tovote^${touser_id}^${amount}` },\n         { text: \"✅ تایید\", callback_data: `Confirm^${touser_id}^${amount}` }\n\n         ],\n         [{ text: \"❌ انصراف\", callback_data: `Cancel^${touser_id}^${amount}` }]\n       \n    ];\n    \n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            // تغییر: استفاده از مقدار ثابت برای message_id\n            message_id: $('SIMORGH').item.json.message.reply_to_message.message_id,\n            chat_id: userData,\n            text: messageText,\n            parse_mode: \"HTML\",\n            reply_markup: { inline_keyboard }\n        }\n    };\n}\n\n// تعریف پیام‌ها و دکمه‌های مربوط به هر مقدار original\nconst responses = {\n    \"/tools\": {\n        message: `کاربر گرامی\\nلطفا یکی از گزینه‌های زیر رو برای ${botName} انتخاب کنید :`,\n        buttons: [\n            [{ text: \"اطلاعات پایه 🦵\", callback_data: \"baseinfo^\" }],\n            [{ text: \"تاریخچه \", callback_data: \"historytools^\" }],\n            [\n                { text: \"» راهنما\", callback_data: \"helptools^\" },\n                { text: \"» پشتیبانی\", url: `${botsupport}` }\n            ]\n        ]\n    }\n};\n// بررسی اینکه مقدار original در لیست پاسخ‌های ما وجود دارد یا نه\nif (responses[jsonData.original]) {\n    const response = responses[jsonData.original];\n    return {\n        url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n        method: \"POST\",\n        parameters: {\n            message_id: $('SIMORGH').item.json.reply_to_message.message.message_id,\n            chat_id: userData, // استفاده از chat_id جدید\n            text: response.message,\n            parse_mode: \"HTML\",\n            reply_markup: {\n                inline_keyboard: response.buttons\n            }\n        }\n    };\n}\n\n// مقدار پیش‌فرض در صورتی که مقدار original در لیست نبود\nreturn {\n    url: `https://api.telegram.org/bot${bottoken}/editMessageText`,\n    method: \"POST\",\n    parameters: {\n        message_id: $('SIMORGH').item.json.message.reply_to_message.message_id,\n        chat_id: userData, // استفاده از chat_id جدید\n        text: `${$json.result}\\noriginal: ${jsonData.original}`,\n        parse_mode: \"HTML\"\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        880
+      ],
+      "id": "a5088057-9391-46cd-b0e9-4a27ed109273",
+      "name": "Confirm_Make_Menu_Message"
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.parameters }}",
+        "options": {}
+      },
+      "id": "db5e3071-f223-441f-9ab8-113bebbc1b7c",
+      "name": "SEND result Click Menu Layer 4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "deleteMessage",
+        "chatId": "={{ $('SIMORGH').item.json.message.from.id }}",
+        "messageId": "={{ $('SIMORGH').item.json.message.message_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        1100
+      ],
+      "id": "b90fedd2-2c34-4e2a-9441-cd8c5a0e756f",
+      "name": "Telegram",
+      "webhookId": "3d1f839b-75da-432b-bf81-f3f7e079899e",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ee9719f6-8546-45a1-8ab0-2561c9b717f0",
+              "leftValue": "={{ $('Request-to-db').item.json.Insufficientcredit }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1940,
+        -20
+      ],
+      "id": "c0013258-6024-42b9-b1f1-174769a90628",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('BOT INFO').item.json['ch-username'] }}",
+        "text": "={{ $('Check User Exist List').item.json.name }} {{ $('Request-to-db').item.json.amount }} امتیاز به {{ $('Request-to-db').item.json.touser_name }} داد و نوشت : \n\n💬 {{ $('Request-to-db').item.json.reason }}\n\n⏰ {{ (function(){\n    const d = new Date();\n    return [\n        d.toLocaleDateString(\"fa-IR\", { weekday: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { day: 'numeric' }),\n        d.toLocaleDateString(\"fa-IR\", { month: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { year: 'numeric' })\n    ].join(' ');\n})() }}\n",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        -220
+      ],
+      "id": "40806f84-8686-4b67-b760-eee12fbe8182",
+      "name": "Send To Ch",
+      "webhookId": "73a5332d-153a-43d0-82cb-dcabc5595f6d",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Request-to-db').item.json.touser }}",
+        "text": "=🎉 {{ $('Check User Exist List').item.json.name }} {{ $('Request-to-db').item.json.amount }} امتیاز بهت داد و نوشت : \n\n💬 {{ $('Request-to-db').item.json.reason }}\n\n⏰ {{ (function(){\n    const d = new Date();\n    return [\n        d.toLocaleDateString(\"fa-IR\", { weekday: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { day: 'numeric' }),\n        d.toLocaleDateString(\"fa-IR\", { month: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { year: 'numeric' })\n    ].join(' ');\n})() }}\n",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "» مشاهده در کانال👁",
+                    "additionalFields": {
+                      "url": "=https://t.me/c/{{ String($('Send To Ch').item.json.result.sender_chat.id).replace(\"-100\", \"\") }}/{{ $json.message_id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2340,
+        -220
+      ],
+      "id": "0eabdf32-511b-4f22-87da-f53f3cdae1e1",
+      "name": "Send To User",
+      "webhookId": "06c0cf00-5c69-4eb3-98e5-39749fbe2363",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- به‌روزرسانی مقدار message_id\nUPDATE transactions \nSET message_id = {{ $('Send To Ch').item.json.result.message_id }}\nWHERE transaction_id = {{ $('Request-to-db').item.json.transaction_id }};\n\n-- نمایش اطلاعات ردیف به‌روزرسانی شده\nSELECT * \nFROM transactions \nWHERE transaction_id = {{ $('Request-to-db').item.json.transaction_id }};",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        2160,
+        -220
+      ],
+      "id": "fd585436-b85f-4dd5-8bdc-4d0360c64d2a",
+      "name": "INSERT Message id",
+      "credentials": {
+        "mySql": {
+          "id": "pZDfMlNbrmUUGmXF",
+          "name": "Simorgh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH random_user AS (\n    SELECT touser \n    FROM transactions \n    ORDER BY RAND() \n    LIMIT 1\n)\nSELECT t.touser, t.reason, t.amount\nFROM transactions t\nJOIN users u ON t.touser = u.user_id\nWHERE t.touser = (SELECT touser FROM random_user);\n",
+        "options": {
+          "detailedOutput": true
+        }
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        -480,
+        920
+      ],
+      "id": "a9122d14-d786-46a7-904b-8c9faadeeba7",
+      "name": "User info",
+      "credentials": {
+        "mySql": {
+          "id": "pZDfMlNbrmUUGmXF",
+          "name": "Simorgh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن داده‌ها از نود قبلی\nconst inputData = items[0].json.data;  // داده‌ها از قسمت \"data\" در ورودی گرفته می‌شوند\n\n// متغیر برای ذخیره جمع amount ها و ترکیب reason ها\nlet totalAmount = 0;\nlet combinedReasons = \"\";\nconst seenReasons = new Map();  // استفاده از Map برای گروه‌بندی و جمع amount ها\n\n// پردازش داده‌ها\ninputData.forEach((item, index) => {\n  // اگر reason قبلاً دیده نشده باشد\n  if (!seenReasons.has(item.reason)) {\n    seenReasons.set(item.reason, 0);  // مقدار اولیه amount را صفر می‌گذاریم\n  }\n  // جمع کردن amount ها برای هر reason\n  seenReasons.set(item.reason, seenReasons.get(item.reason) + item.amount);\n});\n\n// ترکیب reasons و محاسبه مجموع amount ها\nseenReasons.forEach((amount, reason) => {\n  if (combinedReasons.length > 0) {\n    combinedReasons += \"\\n\";  // اضافه کردن خط جدید برای جدا کردن reasons\n  }\n  combinedReasons += `${reason}`;  // افزودن reason\n  totalAmount += amount;  // جمع کردن amount ها\n});\n\n// برگرداندن نتیجه\nreturn [{\n  json: {\n    reason: combinedReasons,\n    amount: totalAmount\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        920
+      ],
+      "id": "e95609e2-6ab3-49b0-91a7-d6723f76990d",
+      "name": "Code",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chatId": "-1002496400244",
+        "text": "={{ $json.message.content }}\n\n⏰ {{ (function(){\n    const d = new Date();\n    return [\n        d.toLocaleDateString(\"fa-IR\", { weekday: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { day: 'numeric' }),\n        d.toLocaleDateString(\"fa-IR\", { month: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { year: 'numeric' })\n    ].join(' ');\n})() }} | #Ai",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": " 🎯 امتیاز دادن در ربات",
+                    "additionalFields": {
+                      "url": "=https://t.me/Simorgh34000bot?start=start"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        920
+      ],
+      "id": "28da12d2-7312-45e7-94cd-87cf2d47bb8f",
+      "name": "Send To Ch1",
+      "webhookId": "89c310cb-74bb-4b5e-ae5e-25adc0d8a22a",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -660,
+        920
+      ],
+      "id": "f49dcc3e-2a82-4d32-9807-dc7019656701",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=تو نقش یه گزارشگر باحال و شوخ رو داری.\nیه دیتا بهت میدم که شامل این دوتاست:\n\nreason: متن تشکر بچه‌ها از یه نفر که با عددگذاری (مثل 1-، 2-، ...) جدا شده.\n\namount: مجموع امتیازهایی که اون فرد گرفته.\n\nکارت اینه که براساس این دیتا یه متن خیلی کوتاه و خودمونی مثل یه توییت بنویسی.\nتوی متن باید:\n\nبا لحن محاوره‌ای و دوستانه نظر بچه‌ها درباره اون فرد رو بگی.\n\nاسم اون فرد رو از داخل reason پیدا کن و تو متن استفاده کن.\n\nمجموع امتیاز (amount) رو هم بگی.\n\nشوخ‌طبع باشی و یه ذره شیطنت کنی.\n\nحواست باشه:\n\nفقط همون یه متن رو بنویس، هیچ توضیح اضافه‌ای نده.\n\nطول متن کم باشه (در حد یه توییت).\n\nدیتا:\nreason: {{ $json.reason }}\namount: {{ $json.amount }}\n\n",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -120,
+        920
+      ],
+      "id": "c2321199-41c9-4d74-82d9-802428e4fb2d",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "ogxmL5A0OV0Qe8np",
+          "name": "Naderi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('User info').item.json.data[0].touser }}",
+        "text": "=نگاهی بنداز به خلاصه‌ی نظرات بچه‌ها درباره‌ی تو که با کمک هوش مصنوعی آماده شده! 🤖✨\nپیام کامل داخل کاناله! 👇🏻👀\n\n⏰ {{ (function(){\n    const d = new Date();\n    return [\n        d.toLocaleDateString(\"fa-IR\", { weekday: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { day: 'numeric' }),\n        d.toLocaleDateString(\"fa-IR\", { month: 'long' }),\n        d.toLocaleDateString(\"fa-IR\", { year: 'numeric' })\n    ].join(' ');\n})() }} | #Ai",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "مشاهده در کانال 👀",
+                    "additionalFields": {
+                      "url": "=https://t.me/c/2496400244/{{ $json.result.message_id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        920
+      ],
+      "id": "4b9cc52d-0e77-43f0-9516-ff6f616a8394",
+      "name": "Send Message To user",
+      "webhookId": "89c310cb-74bb-4b5e-ae5e-25adc0d8a22a",
+      "credentials": {
+        "telegramApi": {
+          "id": "UWUpTV3J983xhaJy",
+          "name": "SIMORGH"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-04-26T12:04:32.540+03:30",
+          "Readable date": "April 26th 2025, 12:04:32 pm",
+          "Readable time": "12:04:32 pm",
+          "Day of week": "Saturday",
+          "Year": "2025",
+          "Month": "April",
+          "Day of month": "26",
+          "Hour": "12",
+          "Minute": "04",
+          "Second": "32",
+          "Timezone": "Asia/Tehran (UTC+03:30)"
+        }
+      }
+    ],
+    "SIMORGH": [
+      {
+        "json": {
+          "update_id": 601152980,
+          "callback_query": {
+            "id": "6112074759938131931",
+            "from": {
+              "id": 1423078300,
+              "is_bot": false,
+              "first_name": "مرتضی",
+              "last_name": "پورحسین",
+              "username": "Simorghsupport_Pourhossein",
+              "language_code": "en"
+            },
+            "message": {
+              "message_id": 2867,
+              "from": {
+                "id": 8154200439,
+                "is_bot": true,
+                "first_name": "ربات سیمرغ ۳۴۰۰۰",
+                "username": "Simorgh34000bot"
+              },
+              "chat": {
+                "id": 1423078300,
+                "first_name": "مرتضی",
+                "last_name": "پورحسین",
+                "username": "Simorghsupport_Pourhossein",
+                "type": "private"
+              },
+              "date": 1745865434,
+              "edit_date": 1745997038,
+              "text": "#زمستان_1403\n\nتو 100 امتیاز داری که می‌تونی به دوستات بدی 🎁\n\nاز بین افراد زیر، به کی می‌خوای امتیاز بدی؟ 🤔",
+              "entities": [
+                {
+                  "offset": 0,
+                  "length": 12,
+                  "type": "hashtag"
+                }
+              ],
+              "reply_markup": {
+                "inline_keyboard": [
+                  [
+                    {
+                      "text": "1- علی معمار",
+                      "callback_data": "tovote^97164371"
+                    },
+                    {
+                      "text": "2- مهدی حسینی",
+                      "callback_data": "tovote^83553051"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "3- حسین انگاشته",
+                      "callback_data": "tovote^1939118028"
+                    },
+                    {
+                      "text": "4- هانی رضایی",
+                      "callback_data": "tovote^438311561"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "5- یاسین ولی",
+                      "callback_data": "tovote^84316833"
+                    },
+                    {
+                      "text": "6- محمدرضا معمار",
+                      "callback_data": "tovote^110549011"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "7- حسین هاشمیان",
+                      "callback_data": "tovote^110344197"
+                    },
+                    {
+                      "text": "8- بهزاد اصفهانی",
+                      "callback_data": "tovote^422626662"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "9- مجید ده نمکی",
+                      "callback_data": "tovote^274432130"
+                    },
+                    {
+                      "text": "10- علی  اخباری",
+                      "callback_data": "tovote^245149665"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "11- سعید امیدی",
+                      "callback_data": "tovote^222807547"
+                    },
+                    {
+                      "text": "12- محمد تقی زاده",
+                      "callback_data": "tovote^150800621"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "13- مصطفی حسینخانی",
+                      "callback_data": "tovote^126164042"
+                    },
+                    {
+                      "text": "14- امیرحسین باقرزاده",
+                      "callback_data": "tovote^7699849418"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "15- مصطفی فتحی",
+                      "callback_data": "tovote^110702431"
+                    },
+                    {
+                      "text": "16- حسین علی عسگری",
+                      "callback_data": "tovote^283552388"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "17- مهدی سعیدی",
+                      "callback_data": "tovote^516218590"
+                    },
+                    {
+                      "text": "18- مرتضی پورحسین",
+                      "callback_data": "tovote^1311414"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "19- رحمان شمسی",
+                      "callback_data": "tovote^6987405825"
+                    },
+                    {
+                      "text": "20- علی پوربهروزان",
+                      "callback_data": "tovote^70833892"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "21- محمدرضا مهاجرنیا",
+                      "callback_data": "tovote^92903851"
+                    },
+                    {
+                      "text": "22- آوا قاسمی",
+                      "callback_data": "tovote^7415375623"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "23- علی معماری",
+                      "callback_data": "tovote^121713560"
+                    },
+                    {
+                      "text": "24-  میلاد نیک آزما",
+                      "callback_data": "tovote^5616348466"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "25- سپهر شعبانی",
+                      "callback_data": "tovote^1816545723"
+                    },
+                    {
+                      "text": "26- احمد کمالی",
+                      "callback_data": "tovote^7091595139"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "27- علی پور بهروزان",
+                      "callback_data": "tovote^7868874927"
+                    },
+                    {
+                      "text": "28- مجید فاضلی",
+                      "callback_data": "tovote^416031526"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "29- علی دهقانی",
+                      "callback_data": "tovote^1003089783"
+                    },
+                    {
+                      "text": "30- حامد قربانی",
+                      "callback_data": "tovote^191620139"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "31- فرزین مجد",
+                      "callback_data": "tovote^6010489050"
+                    },
+                    {
+                      "text": "32- حسین عرب",
+                      "callback_data": "tovote^1737639707"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "33- فاطمه فرمان زاده",
+                      "callback_data": "tovote^7560974272"
+                    },
+                    {
+                      "text": "34- رضا خلعتبری",
+                      "callback_data": "tovote^815221436"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "35- مصطفی طحان نژاد ",
+                      "callback_data": "tovote^1453634941"
+                    },
+                    {
+                      "text": "36- علی احمدی",
+                      "callback_data": "tovote^97650917"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "37- توحید لطفی",
+                      "callback_data": "tovote^46059517"
+                    },
+                    {
+                      "text": "38- محسن رجبی گلمهر",
+                      "callback_data": "tovote^185330596"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "39- حمید شهباری",
+                      "callback_data": "tovote^103743033"
+                    },
+                    {
+                      "text": "40- امین فاطمی",
+                      "callback_data": "tovote^74979638"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "41- مجتبی شاقی",
+                      "callback_data": "tovote^6693154859"
+                    },
+                    {
+                      "text": "42- پویا رحیمی",
+                      "callback_data": "tovote^7709912372"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "43- علی خانچرلی",
+                      "callback_data": "tovote^315867518"
+                    },
+                    {
+                      "text": "44- زهرا هاشمیان پور",
+                      "callback_data": "tovote^180497899"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "45- مجید سیفی",
+                      "callback_data": "tovote^5734904638"
+                    },
+                    {
+                      "text": "46- امین هواسی",
+                      "callback_data": "tovote^368739228"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "47- فاطمه اجیلی",
+                      "callback_data": "tovote^106583524"
+                    },
+                    {
+                      "text": "48- محمدجواد موسوی",
+                      "callback_data": "tovote^101250034"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "49- محسن کهندانی",
+                      "callback_data": "tovote^135819842"
+                    },
+                    {
+                      "text": "50- مهدی اعتمادی",
+                      "callback_data": "tovote^1985282555"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "51- آرش ملک تاجی",
+                      "callback_data": "tovote^5124754671"
+                    },
+                    {
+                      "text": "52- محمد بهمنیار",
+                      "callback_data": "tovote^6741300396"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "53- محمدامین چراغیان",
+                      "callback_data": "tovote^882730020"
+                    },
+                    {
+                      "text": "54- حسام قدیری",
+                      "callback_data": "tovote^6434872716"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "55- مصطفی عسکری",
+                      "callback_data": "tovote^1132635555"
+                    },
+                    {
+                      "text": "56- حمید شهبازی",
+                      "callback_data": "tovote^5914461309"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "57- نور سجادی",
+                      "callback_data": "tovote^7146836414"
+                    },
+                    {
+                      "text": "58- حسین زرگر",
+                      "callback_data": "tovote^192204657"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "59- محمد لاجوردی",
+                      "callback_data": "tovote^6316472362"
+                    },
+                    {
+                      "text": "60- مینا میرجلیلی",
+                      "callback_data": "tovote^88094478"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "61- فاطمه ناصری",
+                      "callback_data": "tovote^5090731432"
+                    },
+                    {
+                      "text": "62- فاطمه نمازیان",
+                      "callback_data": "tovote^5725831272"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "63- مهدی غلامی",
+                      "callback_data": "tovote^241885704"
+                    },
+                    {
+                      "text": "64- محمدرضا جهان‌ نما",
+                      "callback_data": "tovote^410271064"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "» بازگشت",
+                      "callback_data": "userpanel^"
+                    }
+                  ]
+                ]
+              }
+            },
+            "chat_instance": "3357931565458170169",
+            "data": "tovote^150800621"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Check_Message_type": {
+      "main": [
+        [
+          {
+            "node": "Merge Switcher data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Switcher text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Channel User": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Check Creator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check_Message_type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Creator": {
+      "main": [
+        [
+          {
+            "node": "LINK JOIN",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check_Message_type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SIMORGH": {
+      "main": [
+        [
+          {
+            "node": "BOT INFO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BOT INFO": {
+      "main": [
+        [
+          {
+            "node": "Check User Exist List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Make Menu Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Make query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Menu Message": {
+      "main": [
+        [
+          {
+            "node": "SEND result Click Menu Layer 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make query": {
+      "main": [
+        [
+          {
+            "node": "Request-to-db",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Menu Message2": {
+      "main": [
+        [
+          {
+            "node": "SEND result Click Menu Layer 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request-to-db": {
+      "main": [
+        [
+          {
+            "node": "Make Menu Message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Switcher data": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Switcher text": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Make Menu Message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Make Menu Message3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm_Make_Menu_Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Menu Message1": {
+      "main": [
+        [
+          {
+            "node": "SEND result Click Menu Layer ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEND result Click Menu Layer ": {
+      "main": [
+        []
+      ]
+    },
+    "Make Menu Message3": {
+      "main": [
+        [
+          {
+            "node": "SEND result Click Menu Layer 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEND result Click Menu Layer 3": {
+      "main": [
+        []
+      ]
+    },
+    "Check User Exist List": {
+      "main": [
+        [
+          {
+            "node": "IF EXIST True",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF EXIST True": {
+      "main": [
+        [
+          {
+            "node": "Check Channel User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SEND Reject Message To-User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEND Reject Message To-User": {
+      "main": [
+        [
+          {
+            "node": "Notify admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm_Make_Menu_Message": {
+      "main": [
+        [
+          {
+            "node": "SEND result Click Menu Layer 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEND result Click Menu Layer 4": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEND result Click Menu Layer 2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send To Ch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send To Ch": {
+      "main": [
+        [
+          {
+            "node": "INSERT Message id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send To User": {
+      "main": [
+        []
+      ]
+    },
+    "INSERT Message id": {
+      "main": [
+        [
+          {
+            "node": "Send To User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User info": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "User info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Send To Ch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send To Ch1": {
+      "main": [
+        [
+          {
+            "node": "Send Message To user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "Asia/Tehran"
+  },
+  "versionId": "54f7e386-b990-460b-9184-cbfd5cfa576c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ae97ba35770b76a9a65a530931f4cf26a9e56cda380a49b095c8aa5a31c5bd2a"
+  },
+  "id": "iVwF09H8Vqx0zlc0",
+  "tags": []
+}
