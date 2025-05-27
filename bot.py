@@ -14,16 +14,27 @@ c = conn.cursor()
 
 def get_or_create_user(user):
     c.execute("SELECT * FROM users WHERE user_id=?", (user.id,))
-    if not c.fetchone():
-        c.execute("INSERT INTO users (user_id, username, name) VALUES (?, ?, ?)", (user.id, user.username, user.full_name))
-        conn.commit()
+    return c.fetchone() is not None
 
-def main_menu_keyboard():
+def is_user_approved(user_id):
+    c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+    return c.fetchone() is not None
+
+def add_user(user):
+    c.execute("INSERT INTO users (user_id, username, name) VALUES (?, ?, ?)", (user.id, user.username, user.full_name))
+    conn.commit()
+
+def main_menu_keyboard(user_id=None):
     keyboard = [
         [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")],
         [InlineKeyboardButton("» پروفایل شما", callback_data="userprofile^"), InlineKeyboardButton("ردپای امتیازات", callback_data="historypoints^")],
         [InlineKeyboardButton("» راهنما", callback_data="help^"), InlineKeyboardButton("» پشتیبانی", url=config.SUPPORT_USERNAME)]
     ]
+    
+    # اضافه کردن دکمه پنل ادمین برای کاربران ادمین
+    if user_id and user_id == config.ADMIN_USER_ID:
+        keyboard.append([InlineKeyboardButton("🔐 پنل ادمین", callback_data="admin_panel^")])
+    
     return InlineKeyboardMarkup(keyboard)
 
 def get_all_users(exclude_id=None):
@@ -44,24 +55,39 @@ def get_user_profile(user_id):
     """, (user_id,))
     return c.fetchone()
 
-def get_user_transactions(user_id, given=True):
+def get_user_transactions(user_id, given=True, offset=0, limit=3):
     if given:
         c.execute("""
-            SELECT t.amount, t.touser, u.name, t.reason, t.created_at 
+            SELECT t.amount, t.touser, u.name, t.reason, t.created_at, t.message_id, t.transaction_id 
             FROM transactions t 
             LEFT JOIN users u ON t.touser = u.user_id 
             WHERE t.user_id=? 
-            ORDER BY t.created_at DESC LIMIT 10
-        """, (user_id,))
+            ORDER BY t.created_at DESC LIMIT ? OFFSET ?
+        """, (user_id, limit, offset))
     else:
         c.execute("""
-            SELECT t.amount, t.user_id, u.name, t.reason, t.created_at 
+            SELECT t.amount, t.user_id, u.name, t.reason, t.created_at, t.message_id, t.transaction_id
             FROM transactions t 
             LEFT JOIN users u ON t.user_id = u.user_id 
             WHERE t.touser=? 
-            ORDER BY t.created_at DESC LIMIT 10
-        """, (user_id,))
+            ORDER BY t.created_at DESC LIMIT ? OFFSET ?
+        """, (user_id, limit, offset))
     return c.fetchall()
+
+def count_user_transactions(user_id, given=True):
+    if given:
+        c.execute("""
+            SELECT COUNT(*) 
+            FROM transactions 
+            WHERE user_id=?
+        """, (user_id,))
+    else:
+        c.execute("""
+            SELECT COUNT(*) 
+            FROM transactions 
+            WHERE touser=?
+        """, (user_id,))
+    return c.fetchone()[0]
 
 def get_scoreboard():
     c.execute("""
@@ -73,34 +99,33 @@ def get_scoreboard():
     """)
     return c.fetchall()
 
-async def check_channel_membership(user_id):
+# تابع ایجاد دکمه‌های شیشه‌ای برای صفحه‌بندی
+def create_glass_buttons(page, total_pages, callback_prefix):
+    buttons = []
+    if page > 0:
+        buttons.append(InlineKeyboardButton("⬅️ صفحه قبل", callback_data=f"{callback_prefix}^{page-1}"))
+    if page < total_pages - 1:
+        buttons.append(InlineKeyboardButton("صفحه بعد ➡️", callback_data=f"{callback_prefix}^{page+1}"))
+    return buttons
+
+async def check_channel_membership(user_id, context):
     try:
-        # استفاده از API تلگرام برای بررسی عضویت کاربر در کانال
-        bot = Application.get_current().bot
-        
-        # اضافه کردن لاگ برای بررسی مقدار CHANNEL_ID
+        bot = context.bot
         logger.info(f"Checking membership for user {user_id} in channel {config.CHANNEL_ID}")
-        
-        # تلاش برای دریافت اطلاعات عضویت
         chat_member = await bot.get_chat_member(chat_id=config.CHANNEL_ID, user_id=user_id)
-        
-        # اضافه کردن لاگ برای بررسی وضعیت عضویت
         logger.info(f"User {user_id} membership status: {chat_member.status}")
-        
-        # بررسی وضعیت عضویت
         is_member = chat_member.status in ['member', 'administrator', 'creator', 'restricted']
         return is_member
     except Exception as e:
         logger.error(f"Error checking channel membership: {e}")
-        # برای اهداف دیباگ، موقتاً همیشه True برمی‌گردانیم
-        return True
+        return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    get_or_create_user(user)
+    is_approved = is_user_approved(user.id)
     
     # بررسی عضویت در کانال
-    is_member = await check_channel_membership(user.id)
+    is_member = await check_channel_membership(user.id, context)
     if not is_member:
         keyboard = [[InlineKeyboardButton("عضویت در کانال", url=config.CHANNEL_LINK)]]
         await update.message.reply_text(
@@ -109,9 +134,40 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     
+    # بررسی تأیید کاربر
+    if not is_approved:
+        # ارسال پیام به کاربر
+        await update.message.reply_text(
+            f"کاربر گرامی، شما هنوز دسترسی به {config.BOT_NAME} ندارید.\n\n"
+            f"برای اخذ دسترسی لطفاً با ادمین ارتباط بگیرید:\n"
+            f"👤 @{config.SUPPORT_USERNAME.split('/')[-1]}"
+        )
+        
+        # ارسال نوتیفیکیشن به ادمین
+        admin_keyboard = [
+            [InlineKeyboardButton("✅ تأیید کاربر", callback_data=f"approve_user^{user.id}")],
+            [InlineKeyboardButton("❌ رد کاربر", callback_data=f"reject_user^{user.id}")]
+        ]
+        
+        try:
+            bot = context.bot
+            await bot.send_message(
+                chat_id=config.ADMIN_USER_ID,
+                text=f"🔔 <b>درخواست دسترسی جدید</b>\n\n"
+                     f"👤 نام: {user.full_name}\n"
+                     f"🆔 شناسه: {user.id}\n"
+                     f"👤 یوزرنیم: @{user.username or 'ندارد'}",
+                reply_markup=InlineKeyboardMarkup(admin_keyboard),
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.error(f"Error sending notification to admin: {e}")
+        
+        return
+    
     await update.message.reply_text(
         f"کاربر گرامی\nلطفا یکی از گزینه‌های زیر رو برای {config.BOT_NAME} انتخاب کنید :",
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_keyboard(user.id)
     )
 
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -121,7 +177,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     # بررسی عضویت در کانال برای تمام کالبک‌ها
-    is_member = await check_channel_membership(user.id)
+    is_member = await check_channel_membership(user.id, context)
     if not is_member and not data.startswith("joinedch^"):
         keyboard = [[InlineKeyboardButton("عضویت در کانال", url=config.CHANNEL_LINK)]]
         await query.edit_message_text(
@@ -140,7 +196,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer()
         await query.edit_message_text(
             f"کاربر گرامی\nلطفا یکی از گزینه‌های زیر رو برای {config.BOT_NAME} انتخاب کنید :",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(user.id)
         )
     elif data == "userprofile^":
         await query.answer()
@@ -152,7 +208,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]])
             )
         else:
-            await query.edit_message_text("پروفایل یافت نشد.", reply_markup=main_menu_keyboard())
+            await query.edit_message_text("پروفایل یافت نشد.", reply_markup=main_menu_keyboard(user.id))
     elif data == "historypoints^":
         await query.answer()
         keyboard = [
@@ -175,23 +231,66 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer()
         users = get_all_users(exclude_id=user.id)
         if not users:
-            await query.edit_message_text("هیچ کاربر دیگری برای امتیازدهی وجود ندارد!", reply_markup=main_menu_keyboard())
+            await query.edit_message_text("هیچ کاربر دیگری برای امتیازدهی وجود ندارد!", reply_markup=main_menu_keyboard(user.id))
             return
-        keyboard = [[InlineKeyboardButton(f"{i+1}- {u[1]}", callback_data=f"voteuser^{u[0]}")] for i, u in enumerate(users)]
+        
+        keyboard = []
+        row = []
+        for i, u in enumerate(users):
+            row.append(InlineKeyboardButton(f"{i+1}- {u[1]}", callback_data=f"voteuser^{u[0]}"))
+            if len(row) == 2 or i == len(users) - 1:  # دو دکمه در هر ردیف
+                if len(row) == 1 and i == len(users) - 1:  # اگر آخرین آیتم تنها در ردیف باشد
+                    keyboard.append(row)
+                elif len(row) == 2:
+                    keyboard.append(row)
+                row = []
+        
         keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
-        await query.edit_message_text("به کدام کاربر می‌خواهید امتیاز بدهید؟", reply_markup=InlineKeyboardMarkup(keyboard))
+        
+        # دریافت موجودی کاربر
+        c.execute("SELECT balance FROM users WHERE user_id=?", (user.id,))
+        balance = c.fetchone()[0]
+        
+        await query.edit_message_text(
+            f"#{config.SEASON_NAME}\n\n"
+            f"تو {balance} امتیاز داری که می‌تونی به دوستات بدی 🎁\n\n"
+            f"از بین افراد زیر، به کی می‌خوای امتیاز بدی؟ 🤔",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
     elif data.startswith("voteuser^"):
         await query.answer()
         touser_id = int(data.split("^")[1])
+        
+        # دریافت اطلاعات کاربر مقصد
+        c.execute("SELECT name FROM users WHERE user_id=?", (touser_id,))
+        result = c.fetchone()
+        touser_name = result[0] if result else "کاربر"
+        
         profile = get_user_profile(user.id)
         if not profile or profile[3] < 1:
-            await query.edit_message_text("اعتبار کافی برای امتیازدهی ندارید!", reply_markup=main_menu_keyboard())
+            await query.edit_message_text("اعتبار کافی برای امتیازدهی ندارید!", reply_markup=main_menu_keyboard(user.id))
             return
-        # انتخاب مقدار امتیاز
-        max_score = min(profile[3], 5)
-        keyboard = [[InlineKeyboardButton(str(i), callback_data=f"givepoint^{touser_id}^{i}") for i in range(1, max_score+1)]]
+        
+        # انتخاب مقدار امتیاز - تمام مقادیر ممکن را نمایش می‌دهیم
+        max_score = profile[3]  # حداکثر امتیاز برابر با موجودی کاربر
+        
+        # ایجاد دکمه‌های امتیازدهی، 3 دکمه در هر ردیف
+        keyboard = []
+        row = []
+        for i in range(1, max_score + 1):
+            row.append(InlineKeyboardButton(str(i), callback_data=f"givepoint^{touser_id}^{i}"))
+            if len(row) == 3 or i == max_score:
+                keyboard.append(row)
+                row = []
+        
         keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="tovote^")])
-        await query.edit_message_text(f"چه مقدار امتیاز می‌خواهید بدهید؟ (حداکثر {max_score})", reply_markup=InlineKeyboardMarkup(keyboard))
+        
+        await query.edit_message_text(
+            f"شما در حال امتیاز دادن به {touser_name} هستید!\n\n"
+            f"درحال حاضر شما {max_score} امتیاز دارید که میتوانید استفاده کنید.\n\n"
+            f"لطفا مقدار امتیازی که میخواهید بدهید را انتخاب کنید:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
     elif data.startswith("givepoint^"):
         await query.answer()
         parts = data.split("^")
@@ -200,7 +299,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # دریافت اطلاعات کاربر مقصد
         c.execute("SELECT name FROM users WHERE user_id=?", (touser_id,))
-        touser_name = c.fetchone()[0] if c.fetchone() else "کاربر"
+        result = c.fetchone()
+        touser_name = result[0] if result else "کاربر"
         
         # درخواست دلیل امتیازدهی
         keyboard = [[InlineKeyboardButton("» بازگشت", callback_data="tovote^")]]
@@ -208,7 +308,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # ذخیره اطلاعات در context.user_data
         context.user_data['pending_transaction'] = {
             'touser_id': touser_id,
-            'amount': amount
+            'amount': amount,
+            'touser_name': touser_name  # ذخیره نام کاربر مقصد
         }
         
         await query.edit_message_text(
@@ -229,8 +330,13 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         profile = get_user_profile(user.id)
         if not profile or profile[3] < amount:
-            await query.edit_message_text("اعتبار کافی ندارید!", reply_markup=main_menu_keyboard())
+            await query.edit_message_text("اعتبار کافی ندارید!", reply_markup=main_menu_keyboard(user.id))
             return
+        
+        # دریافت اطلاعات کاربر مقصد
+        c.execute("SELECT name FROM users WHERE user_id=?", (touser_id,))
+        result = c.fetchone()
+        touser_name = result[0] if result else "کاربر"
         
         # ثبت تراکنش و کم کردن اعتبار
         c.execute("UPDATE users SET balance = balance - ? WHERE user_id = ?", (amount, user.id))
@@ -238,49 +344,352 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                  (user.id, touser_id, amount, config.SEASON_ID, reason))
         conn.commit()
         
-        # دریافت اطلاعات کاربر مقصد
-        c.execute("SELECT name FROM users WHERE user_id=?", (touser_id,))
-        touser_result = c.fetchone()
-        touser_name = touser_result[0] if touser_result else "کاربر"
+        # دریافت آخرین شناسه تراکنش درج شده
+        c.execute("SELECT last_insert_rowid()")
+        transaction_id = c.fetchone()[0]
         
+        # دریافت تاریخ و زمان فارسی
+        from datetime import datetime
+        import jdatetime  # نیاز به نصب پکیج jdatetime
+        now = jdatetime.datetime.now().strftime("%A %d %B %Y")
+        current_time = f"⏰ {now}"
+        
+        try:
+            # ارسال پیام به کانال
+            bot = context.bot
+            channel_message = await bot.send_message(
+                chat_id=config.CHANNEL_ID,
+                text=f"{user.full_name} {amount} امتیاز به {touser_name} داد و نوشت : \n\n"
+                     f"💬 {reason}\n\n"
+                     f"{current_time}"
+            )
+            
+            # بروزرسانی message_id در دیتابیس
+            if channel_message:
+                c.execute("UPDATE transactions SET message_id = ? WHERE transaction_id = ?", 
+                         (channel_message.message_id, transaction_id))
+                conn.commit()
+                
+                # ارسال پیام به کاربر دریافت‌کننده
+                channel_id_num = config.CHANNEL_ID.replace("-100", "")
+                keyboard = [[InlineKeyboardButton("» مشاهده در کانال👁", url=f"https://t.me/c/{channel_id_num}/{channel_message.message_id}")]]
+                
+                try:
+                    await bot.send_message(
+                        chat_id=touser_id,
+                        text=f"🎉 {user.full_name} {amount} امتیاز بهت داد و نوشت : \n\n"
+                             f"💬 {reason}\n\n"
+                             f"{current_time}",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending notification to user {touser_id}: {e}")
+        
+        except Exception as e:
+            logger.error(f"Error sending message to channel: {e}")
+        
+        # اطلاع به کاربر فرستنده
         await query.edit_message_text(
             f"✅ {amount} امتیاز به {touser_name} داده شد!\n\n"  
             f"دلیل: {reason}",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(user.id)
         )
-    elif data == "givenpoints^":
+    elif data.startswith("givenpoints^"):
         await query.answer()
-        given = get_user_transactions(user.id, given=True)
-        msg = "📊 امتیازهایی که دادید:\n\n"
+        parts = data.split("^")
+        page = int(parts[1]) if len(parts) > 1 else 0
+        
+        # دریافت تعداد کل تراکنش‌ها
+        total_transactions = count_user_transactions(user.id, given=True)
+        total_pages = (total_transactions + 2) // 3  # تقسیم به صفحات 3 تایی
+        
+        # دریافت تراکنش‌های صفحه فعلی
+        given = get_user_transactions(user.id, given=True, offset=page*3, limit=3)
+        
+        msg = "✨ <b>امتیازهایی که دادید</b> ✨\n\n"
         if given:
-            for i, transaction in enumerate(given):
-                msg += f"{i+1}- به {transaction[2]}: {transaction[0]} امتیاز\n   دلیل: {transaction[3] or '-'}\n   تاریخ: {transaction[4]}\n\n"
+            for transaction in given:
+                amount = transaction[0]
+                touser_name = transaction[2]
+                reason = transaction[3] or '-'
+                created_at = transaction[4]
+                message_id = transaction[5]  # شناسه پیام در کانال
+                
+                # اضافه کردن لینک به پیام کانال
+                link_text = "[لینک]"
+                if message_id:
+                    channel_id_num = config.CHANNEL_ID.replace("-100", "")
+                    link_text = f'<a href="https://t.me/c/{channel_id_num}/{message_id}">[لینک]</a>'
+                
+                msg += f"✅ شما {amount} امتیاز به {touser_name} دادید: {link_text}\n"
+                msg += f"📄 {reason}\n\n"
+                msg += f"🕒 {created_at}\n\n" + "-" * 30 + "\n\n"
         else:
             msg += "- هنوز امتیازی به کسی نداده‌اید.\n\n"
         
-        keyboard = [[InlineKeyboardButton("» بازگشت", callback_data="historypoints^")]]
-        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
-    elif data == "receivedpoints^":
+        # ایجاد دکمه‌های شیشه‌ای
+        nav_buttons = create_glass_buttons(page, max(1, total_pages), "givenpoints")
+        keyboard = [nav_buttons] if nav_buttons else []
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
+        
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+    elif data.startswith("receivedpoints^"):
         await query.answer()
-        received = get_user_transactions(user.id, given=False)
-        msg = "📊 امتیازهایی که گرفتید:\n\n"
+        parts = data.split("^")
+        page = int(parts[1]) if len(parts) > 1 else 0
+        
+        # دریافت تعداد کل تراکنش‌ها
+        total_transactions = count_user_transactions(user.id, given=False)
+        total_pages = (total_transactions + 2) // 3  # تقسیم به صفحات 3 تایی
+        
+        # دریافت تراکنش‌های صفحه فعلی
+        received = get_user_transactions(user.id, given=False, offset=page*3, limit=3)
+        
+        msg = "✨ <b>امتیازهایی که دریافت کردید</b> ✨\n\n"
         if received:
-            for i, transaction in enumerate(received):
-                msg += f"{i+1}- از {transaction[2]}: {transaction[0]} امتیاز\n   دلیل: {transaction[3] or '-'}\n   تاریخ: {transaction[4]}\n\n"
+            for transaction in received:
+                amount = transaction[0]
+                from_name = transaction[2]
+                reason = transaction[3] or '-'
+                created_at = transaction[4]
+                message_id = transaction[5]  # شناسه پیام در کانال
+                
+                # اضافه کردن لینک به پیام کانال
+                link_text = "[لینک]"
+                if message_id:
+                    channel_id_num = config.CHANNEL_ID.replace("-100", "")
+                    link_text = f'<a href="https://t.me/c/{channel_id_num}/{message_id}">[لینک]</a>'
+                
+                msg += f"✅ {from_name} به شما {amount} امتیاز داد: {link_text}\n"
+                msg += f"📄 {reason}\n\n"
+                msg += f"🕒 {created_at}\n\n" + "-" * 30 + "\n\n"
         else:
             msg += "- هنوز امتیازی دریافت نکرده‌اید.\n\n"
         
-        keyboard = [[InlineKeyboardButton("» بازگشت", callback_data="historypoints^")]]
-        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
-    elif data == "Scoreboard^":
-        await query.answer()
-        board = get_scoreboard()
-        msg = "🏆 رتبه‌بندی کاربران:\n\n"
-        for i, row in enumerate(board):
-            msg += f"{i+1}- {row[2]}: {row[1]} امتیاز\n"
+        # ایجاد دکمه‌های شیشه‌ای
+        nav_buttons = create_glass_buttons(page, max(1, total_pages), "receivedpoints")
+        keyboard = [nav_buttons] if nav_buttons else []
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
         
-        keyboard = [[InlineKeyboardButton("» بازگشت", callback_data="historypoints^")]]
-        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+    elif data.startswith("Scoreboard^"):
+        await query.answer()
+        parts = data.split("^")
+        page = int(parts[1]) if len(parts) > 1 else 0
+        
+        # دریافت تابلوی امتیازات
+        board = get_scoreboard()
+        total_items = len(board)
+        total_pages = (total_items + 9) // 10  # تقسیم به صفحات 10 تایی
+        
+        # انتخاب آیتم‌های صفحه فعلی
+        start_idx = page * 10
+        end_idx = min(start_idx + 10, total_items)
+        current_page_items = board[start_idx:end_idx]
+        
+        msg = "🏆 <b>تابلوی امتیازات برتر</b> 🏆\n\n"
+        for i, row in enumerate(current_page_items):
+            rank = i + start_idx + 1
+            medal = ""
+            if rank == 1:
+                medal = "🥇 "
+            elif rank == 2:
+                medal = "🥈 "
+            elif rank == 3:
+                medal = "🥉 "
+            
+            user_name = row[2] or "کاربر"
+            total_points = row[1]
+            
+            # برجسته کردن کاربر جاری
+            if row[0] == user.id:
+                user_name = f"<tg-spoiler>{user_name}</tg-spoiler>"
+            
+            msg += f"{rank}- {medal}{user_name}: <b>{total_points}</b> امتیاز\n\n"
+        
+        # ایجاد دکمه‌های شیشه‌ای
+        nav_buttons = create_glass_buttons(page, max(1, total_pages), "Scoreboard")
+        keyboard = [nav_buttons] if nav_buttons else []
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
+        
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+        
+    # پنل ادمین
+    elif data == "admin_panel^":
+        if user.id != config.ADMIN_USER_ID:
+            await query.answer("شما دسترسی به این بخش ندارید!")
+            return
+            
+        await query.answer()
+        keyboard = [
+            [InlineKeyboardButton("👥 مدیریت کاربران", callback_data="admin_users^")],
+            [InlineKeyboardButton("💰 مدیریت تراکنش‌ها", callback_data="admin_transactions^")],
+            [InlineKeyboardButton("📊 آمار و گزارشات", callback_data="admin_stats^")],
+            [InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")]
+        ]
+        
+        await query.edit_message_text(
+            "🔐 <b>پنل مدیریت ادمین</b>\n\n"
+            "به پنل مدیریت خوش آمدید. از این بخش می‌توانید کاربران و تراکنش‌ها را مدیریت کنید و آمار سیستم را مشاهده نمایید.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+        
+    elif data == "admin_users^":
+        if user.id != config.ADMIN_USER_ID:
+            await query.answer("شما دسترسی به این بخش ندارید!")
+            return
+            
+        await query.answer()
+        # در اینجا می‌توانید لیست کاربران را نمایش دهید
+        c.execute("SELECT COUNT(*) FROM users")
+        user_count = c.fetchone()[0]
+        
+        keyboard = [
+            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
+        ]
+        
+        await query.edit_message_text(
+            f"👥 <b>مدیریت کاربران</b>\n\n"
+            f"تعداد کل کاربران: {user_count}\n\n"
+            f"این بخش در حال توسعه است...",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+        
+    elif data == "admin_transactions^":
+        if user.id != config.ADMIN_USER_ID:
+            await query.answer("شما دسترسی به این بخش ندارید!")
+            return
+            
+        await query.answer()
+        # در اینجا می‌توانید آمار تراکنش‌ها را نمایش دهید
+        c.execute("SELECT COUNT(*), SUM(amount) FROM transactions")
+        result = c.fetchone()
+        transaction_count = result[0] or 0
+        total_amount = result[1] or 0
+        
+        keyboard = [
+            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
+        ]
+        
+        await query.edit_message_text(
+            f"💰 <b>مدیریت تراکنش‌ها</b>\n\n"
+            f"تعداد کل تراکنش‌ها: {transaction_count}\n"
+            f"مجموع امتیازات: {total_amount}\n\n"
+            f"این بخش در حال توسعه است...",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+        
+    elif data == "admin_stats^":
+        if user.id != config.ADMIN_USER_ID:
+            await query.answer("شما دسترسی به این بخش ندارید!")
+            return
+            
+        await query.answer()
+        # در اینجا می‌توانید آمار کلی سیستم را نمایش دهید
+        c.execute("SELECT COUNT(*) FROM users")
+        user_count = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*), SUM(amount) FROM transactions")
+        result = c.fetchone()
+        transaction_count = result[0] or 0
+        total_amount = result[1] or 0
+        
+        keyboard = [
+            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
+        ]
+        
+        await query.edit_message_text(
+            f"📊 <b>آمار و گزارشات</b>\n\n"
+            f"تعداد کل کاربران: {user_count}\n"
+            f"تعداد کل تراکنش‌ها: {transaction_count}\n"
+            f"مجموع امتیازات: {total_amount}\n\n"
+            f"این بخش در حال توسعه است...",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+    # پردازش تأیید یا رد کاربر
+    elif data.startswith("approve_user^"):
+        if user.id != config.ADMIN_USER_ID:
+            await query.answer("شما دسترسی به این بخش ندارید!")
+            return
+            
+        await query.answer()
+        user_id = int(data.split("^")[1])
+        
+        # دریافت اطلاعات کاربر از تلگرام
+        try:
+            bot = context.bot
+            chat_member = await bot.get_chat_member(chat_id=user_id, user_id=user_id)
+            target_user = chat_member.user
+            
+            # افزودن کاربر به دیتابیس
+            c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+            if not c.fetchone():
+                c.execute("INSERT INTO users (user_id, username, name) VALUES (?, ?, ?)", 
+                         (user_id, target_user.username, target_user.full_name))
+                conn.commit()
+                
+                # ارسال پیام به کاربر
+                await bot.send_message(
+                    chat_id=user_id,
+                    text=f"✅ <b>درخواست دسترسی شما تأیید شد</b>\n\n"
+                         f"اکنون می‌توانید از {config.BOT_NAME} استفاده کنید.\n"
+                         f"برای شروع، دستور /start را ارسال کنید.",
+                    parse_mode="HTML"
+                )
+                
+                # اطلاع به ادمین
+                await query.edit_message_text(
+                    f"✅ کاربر {target_user.full_name} با موفقیت به سیستم اضافه شد و به او اطلاع داده شد.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
+                )
+            else:
+                await query.edit_message_text(
+                    f"⚠️ کاربر {target_user.full_name} قبلاً در سیستم ثبت شده است.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
+                )
+        except Exception as e:
+            logger.error(f"Error approving user: {e}")
+            await query.edit_message_text(
+                f"❌ خطا در تأیید کاربر: {e}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
+            )
+    
+    elif data.startswith("reject_user^"):
+        if user.id != config.ADMIN_USER_ID:
+            await query.answer("شما دسترسی به این بخش ندارید!")
+            return
+            
+        await query.answer()
+        user_id = int(data.split("^")[1])
+        
+        try:
+            bot = context.bot
+            chat_member = await bot.get_chat_member(chat_id=user_id, user_id=user_id)
+            target_user = chat_member.user
+            
+            # ارسال پیام به کاربر
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"❌ <b>درخواست دسترسی شما رد شد</b>\n\n"
+                     f"متأسفانه درخواست شما برای دسترسی به {config.BOT_NAME} توسط ادمین رد شد.",
+                parse_mode="HTML"
+            )
+            
+            # اطلاع به ادمین
+            await query.edit_message_text(
+                f"❌ درخواست کاربر {target_user.full_name} رد شد و به او اطلاع داده شد.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
+            )
+        except Exception as e:
+            logger.error(f"Error rejecting user: {e}")
+            await query.edit_message_text(
+                f"❌ خطا در رد کاربر: {e}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
+            )
     else:
         await query.answer("در حال توسعه ...")
 
@@ -288,31 +697,42 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     message = update.message.text
     
+    # بررسی تأیید کاربر
+    is_approved = is_user_approved(user.id)
+    if not is_approved:
+        # ارسال پیام به کاربر
+        await update.message.reply_text(
+            f"کاربر گرامی، شما هنوز دسترسی به {config.BOT_NAME} ندارید.\n\n"
+            f"برای اخذ دسترسی لطفاً با ادمین ارتباط بگیرید:\n"
+            f"👤 @{config.SUPPORT_USERNAME.split('/')[-1]}"
+        )
+        return
+    
     # اگر کاربر در حالت انتظار برای دلیل امتیازدهی است
     if context.user_data.get('waiting_for_reason'):
         pending = context.user_data.get('pending_transaction')
         if pending:
             touser_id = pending['touser_id']
             amount = pending['amount']
+            touser_name = pending.get('touser_name', 'کاربر')
             reason = message
-            
-            # دریافت اطلاعات کاربر مقصد
-            c.execute("SELECT name FROM users WHERE user_id=?", (touser_id,))
-            touser_result = c.fetchone()
-            touser_name = touser_result[0] if touser_result else "کاربر"
             
             # ایجاد دکمه‌های تأیید یا لغو
             keyboard = [
-                [InlineKeyboardButton("✅ تأیید و ارسال", callback_data=f"Confirm^{touser_id}^{amount}^{reason}")],
-                [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+                [
+                    InlineKeyboardButton("✏️ ویرایش", callback_data=f"voteuser^{touser_id}"),
+                    InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{touser_id}^{amount}^{reason}")
+                ],
+                [InlineKeyboardButton("❌ انصراف", callback_data="tovote^")]
             ]
             
             await update.message.reply_text(
-                f"خلاصه تراکنش:\n\n"  
-                f"گیرنده: {touser_name}\n"  
-                f"مقدار: {amount} امتیاز\n"  
-                f"دلیل: {reason}\n\n"  
-                f"آیا از ارسال این امتیاز اطمینان دارید؟",
+                f"شما قصد دارید به {touser_name} {amount} امتیاز بدهید.\n\n"
+                f"---------------------------------\n"
+                f"دلیل : {reason}\n"
+                f"---------------------------------\n\n"
+                f"اگر متن مناسب است، روی دکمه «تأیید» کلیک کنید تا امتیاز ثبت شود.\n"
+                f"در غیر این صورت، می‌توانید پیام خود را ویرایش کنید.",
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
             
@@ -321,7 +741,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
     
     # اگر پیام با دستور شروع نشده باشد، منوی اصلی را نمایش می‌دهیم
-    is_member = await check_channel_membership(user.id)
+    is_member = await check_channel_membership(user.id, context)
     if not is_member:
         keyboard = [[InlineKeyboardButton("عضویت در کانال", url=config.CHANNEL_LINK)]]
         await update.message.reply_text(
@@ -332,7 +752,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(
         f"کاربر گرامی\nلطفا یکی از گزینه‌های زیر رو برای {config.BOT_NAME} انتخاب کنید :",
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_keyboard(user.id)
     )
 
 async def main():

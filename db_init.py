@@ -1,14 +1,14 @@
 # راهنمای افزودن کاربران به دیتابیس:
-#
+
 # برای افزودن لیست کاربران (مثلاً از یک آرایه JSON)، می‌توانید از کد زیر استفاده کنید:
-#
+
 # import sqlite3
 # import json
 # from config import DB_PATH
-#
+
 # with open('users.json', encoding='utf-8') as f:
 #     users = json.load(f)
-#
+
 # conn = sqlite3.connect(DB_PATH)
 # c = conn.cursor()
 # for user in users:
