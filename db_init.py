@@ -31,10 +31,7 @@ import sqlite3
 import os
 from config import DB_PATH
 
-if os.path.exists(DB_PATH):
-    print("Database already exists. No action taken.")
-    exit(0)
-
+# همیشه دیتابیس را باز کن (چه وجود داشته باشد چه نه)
 conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 
@@ -72,6 +69,15 @@ CREATE TABLE IF NOT EXISTS season (
 )
 ''')
 
+# جدول ادمین‌ها
+c.execute('''
+CREATE TABLE IF NOT EXISTS admins (
+    user_id INTEGER PRIMARY KEY,
+    role TEXT NOT NULL, -- god یا admin
+    permissions TEXT -- رشته‌ای از دسترسی‌ها (مثلاً: add_user,view_stats,...)
+)
+''')
+
 conn.commit()
 conn.close()
-print("Database and tables created.") 
+print("Database and tables checked/created.") 

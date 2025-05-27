@@ -1,5 +1,6 @@
 import sqlite3
 from config import DB_PATH
+import config
 
 users = [
     {"id": 1, "name": "علی معمار", "balance": 100, "user_id": 97164371, "birthday": None, "username": None, "created_at": None},
@@ -84,5 +85,13 @@ for user in users:
         user.get('created_at')
     ))
 conn.commit()
+
+# بررسی وجود ادمین گاد
+c.execute("SELECT * FROM admins WHERE user_id=?", (config.ADMIN_USER_ID,))
+if not c.fetchone():
+    c.execute("INSERT INTO admins (user_id, role, permissions) VALUES (?, ?, ?)", (config.ADMIN_USER_ID, 'god', 'all'))
+    print(f"ادمین گاد با user_id={config.ADMIN_USER_ID} اضافه شد.")
+conn.commit()
 conn.close()
+
 print('Users imported.') 

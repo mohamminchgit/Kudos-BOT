@@ -12,6 +12,14 @@ logger = logging.getLogger(__name__)
 conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
 c = conn.cursor()
 
+# لیست دسترسی‌های ادمین (مطابق با گزینه‌های پنل مدیریت)
+ADMIN_PERMISSIONS = [
+    ("admin_users", "مدیریت کاربران"),
+    ("admin_transactions", "مدیریت تراکنش"),
+    ("admin_stats", "آمار و گزارشات"),
+    ("manage_admins", "مدیریت ادمین‌ها"),
+]
+
 def get_or_create_user(user):
     c.execute("SELECT * FROM users WHERE user_id=?", (user.id,))
     return c.fetchone() is not None
@@ -32,8 +40,13 @@ def main_menu_keyboard(user_id=None):
     ]
     
     # اضافه کردن دکمه پنل ادمین برای کاربران ادمین
-    if user_id and user_id == config.ADMIN_USER_ID:
-        keyboard.append([InlineKeyboardButton("🔐 پنل ادمین", callback_data="admin_panel^")])
+    if user_id:
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user_id,))
+        row = c.fetchone()
+        if row:
+            role, permissions = row
+            if role == 'god' or permissions:
+                keyboard.append([InlineKeyboardButton("🔐 پنل ادمین", callback_data="admin_panel^")])
     
     return InlineKeyboardMarkup(keyboard)
 
@@ -218,7 +231,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]
         ]
         await query.edit_message_text(
-            f"📌 تاریخچه امتیازات شما\n\nدر این بخش می‌توانید امتیازهایی که به دیگران داده‌اید و امتیازهایی که از دیگران دریافت کرده‌اید را همراه با وضعیت آن‌ها مشاهده کنید.\n\nلطفاً از گزینه‌های زیر، انتخاب کنید:",
+            f"تاریخچه امتیازات شما\n\nدر این بخش می‌توانید امتیازهایی که به دیگران داده‌اید و امتیازهایی که از دیگران دریافت کرده‌اید را همراه با وضعیت آن‌ها مشاهده کنید.\n\nلطفاً از گزینه‌های زیر، انتخاب کنید:",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
     elif data == "joinedch^":
@@ -437,15 +450,15 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("givenpoints^"):
         await query.answer()
         parts = data.split("^")
-        page = int(parts[1]) if len(parts) > 1 else 0
-        
+        try:
+            page = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+        except:
+            page = 0
         # دریافت تعداد کل تراکنش‌ها
         total_transactions = count_user_transactions(user.id, given=True)
         total_pages = (total_transactions + 2) // 3  # تقسیم به صفحات 3 تایی
-        
         # دریافت تراکنش‌های صفحه فعلی
         given = get_user_transactions(user.id, given=True, offset=page*3, limit=3)
-        
         msg = "✨ <b>امتیازهایی که دادید</b> ✨\n\n"
         if given:
             for transaction in given:
@@ -454,37 +467,33 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reason = transaction[3] or '-'
                 created_at = transaction[4]
                 message_id = transaction[5]  # شناسه پیام در کانال
-                
                 # اضافه کردن لینک به پیام کانال
                 link_text = "[لینک]"
                 if message_id:
                     channel_id_num = config.CHANNEL_ID.replace("-100", "")
                     link_text = f'<a href="https://t.me/c/{channel_id_num}/{message_id}">[لینک]</a>'
-                
                 msg += f"✅ شما {amount} امتیاز به {touser_name} دادید: {link_text}\n"
                 msg += f"📄 {reason}\n\n"
                 msg += f"🕒 {created_at}\n\n" + "-" * 30 + "\n\n"
         else:
             msg += "- هنوز امتیازی به کسی نداده‌اید.\n\n"
-        
         # ایجاد دکمه‌های شیشه‌ای
         nav_buttons = create_glass_buttons(page, max(1, total_pages), "givenpoints")
         keyboard = [nav_buttons] if nav_buttons else []
         keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
-        
         await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
     elif data.startswith("receivedpoints^"):
         await query.answer()
         parts = data.split("^")
-        page = int(parts[1]) if len(parts) > 1 else 0
-        
+        try:
+            page = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+        except:
+            page = 0
         # دریافت تعداد کل تراکنش‌ها
         total_transactions = count_user_transactions(user.id, given=False)
         total_pages = (total_transactions + 2) // 3  # تقسیم به صفحات 3 تایی
-        
         # دریافت تراکنش‌های صفحه فعلی
         received = get_user_transactions(user.id, given=False, offset=page*3, limit=3)
-        
         msg = "✨ <b>امتیازهایی که دریافت کردید</b> ✨\n\n"
         if received:
             for transaction in received:
@@ -493,40 +502,36 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reason = transaction[3] or '-'
                 created_at = transaction[4]
                 message_id = transaction[5]  # شناسه پیام در کانال
-                
                 # اضافه کردن لینک به پیام کانال
                 link_text = "[لینک]"
                 if message_id:
                     channel_id_num = config.CHANNEL_ID.replace("-100", "")
                     link_text = f'<a href="https://t.me/c/{channel_id_num}/{message_id}">[لینک]</a>'
-                
                 msg += f"✅ {from_name} به شما {amount} امتیاز داد: {link_text}\n"
                 msg += f"📄 {reason}\n\n"
                 msg += f"🕒 {created_at}\n\n" + "-" * 30 + "\n\n"
         else:
             msg += "- هنوز امتیازی دریافت نکرده‌اید.\n\n"
-        
         # ایجاد دکمه‌های شیشه‌ای
         nav_buttons = create_glass_buttons(page, max(1, total_pages), "receivedpoints")
         keyboard = [nav_buttons] if nav_buttons else []
         keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
-        
         await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
     elif data.startswith("Scoreboard^"):
         await query.answer()
         parts = data.split("^")
-        page = int(parts[1]) if len(parts) > 1 else 0
-        
+        try:
+            page = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+        except:
+            page = 0
         # دریافت تابلوی امتیازات
         board = get_scoreboard()
         total_items = len(board)
         total_pages = (total_items + 9) // 10  # تقسیم به صفحات 10 تایی
-        
         # انتخاب آیتم‌های صفحه فعلی
         start_idx = page * 10
         end_idx = min(start_idx + 10, total_items)
         current_page_items = board[start_idx:end_idx]
-        
         msg = "🏆 <b>تابلوی امتیازات برتر</b> 🏆\n\n"
         for i, row in enumerate(current_page_items):
             rank = i + start_idx + 1
@@ -537,58 +542,72 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 medal = "🥈 "
             elif rank == 3:
                 medal = "🥉 "
-            
             user_name = row[2] or "کاربر"
             total_points = row[1]
-            
             # برجسته کردن کاربر جاری
             if row[0] == user.id:
                 user_name = f"<tg-spoiler>{user_name}</tg-spoiler>"
-            
             msg += f"{rank}- {medal}{user_name}: <b>{total_points}</b> امتیاز\n\n"
-        
         # ایجاد دکمه‌های شیشه‌ای
         nav_buttons = create_glass_buttons(page, max(1, total_pages), "Scoreboard")
         keyboard = [nav_buttons] if nav_buttons else []
         keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
-        
         await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
         
     # پنل ادمین
     elif data == "admin_panel^":
-        if user.id != config.ADMIN_USER_ID:
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row:
             await query.answer("شما دسترسی به این بخش ندارید!")
             return
-            
+        role, permissions = row
+        allowed = []
+        if role == 'god':
+            allowed = [p[0] for p in ADMIN_PERMISSIONS]
+        elif permissions:
+            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
+        keyboard = []
+        if "admin_users" in allowed:
+            keyboard.append([InlineKeyboardButton("👥 مدیریت کاربران", callback_data="admin_users^")])
+        if "admin_transactions" in allowed:
+            keyboard.append([InlineKeyboardButton("💰 مدیریت تراکنش‌ها", callback_data="admin_transactions^")])
+        if "admin_stats" in allowed:
+            keyboard.append([InlineKeyboardButton("📊 آمار و گزارشات", callback_data="admin_stats^")])
+        if "manage_admins" in allowed:
+            keyboard.append([InlineKeyboardButton("👤 مدیریت ادمین‌ها", callback_data="manage_admins^")])
+        keyboard.append([InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")])
         await query.answer()
-        keyboard = [
-            [InlineKeyboardButton("👥 مدیریت کاربران", callback_data="admin_users^")],
-            [InlineKeyboardButton("💰 مدیریت تراکنش‌ها", callback_data="admin_transactions^")],
-            [InlineKeyboardButton("📊 آمار و گزارشات", callback_data="admin_stats^")],
-            [InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")]
-        ]
-        
         await query.edit_message_text(
             "🔐 <b>پنل مدیریت ادمین</b>\n\n"
             "به پنل مدیریت خوش آمدید. از این بخش می‌توانید کاربران و تراکنش‌ها را مدیریت کنید و آمار سیستم را مشاهده نمایید.",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="HTML"
         )
+        return
         
     elif data == "admin_users^":
-        if user.id != config.ADMIN_USER_ID:
-            await query.answer("شما دسترسی به این بخش ندارید!")
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
             return
-            
+        role, permissions = row
+        allowed = []
+        if role == 'god':
+            allowed = [p[0] for p in ADMIN_PERMISSIONS]
+        elif permissions:
+            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
+        if "admin_users" not in allowed:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
         await query.answer()
         # در اینجا می‌توانید لیست کاربران را نمایش دهید
         c.execute("SELECT COUNT(*) FROM users")
         user_count = c.fetchone()[0]
-        
         keyboard = [
             [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
         ]
-        
         await query.edit_message_text(
             f"👥 <b>مدیریت کاربران</b>\n\n"
             f"تعداد کل کاربران: {user_count}\n\n"
@@ -596,23 +615,32 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="HTML"
         )
+        return
         
     elif data == "admin_transactions^":
-        if user.id != config.ADMIN_USER_ID:
-            await query.answer("شما دسترسی به این بخش ندارید!")
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
             return
-            
+        role, permissions = row
+        allowed = []
+        if role == 'god':
+            allowed = [p[0] for p in ADMIN_PERMISSIONS]
+        elif permissions:
+            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
+        if "admin_transactions" not in allowed:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
         await query.answer()
         # در اینجا می‌توانید آمار تراکنش‌ها را نمایش دهید
         c.execute("SELECT COUNT(*), SUM(amount) FROM transactions")
         result = c.fetchone()
         transaction_count = result[0] or 0
         total_amount = result[1] or 0
-        
         keyboard = [
             [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
         ]
-        
         await query.edit_message_text(
             f"💰 <b>مدیریت تراکنش‌ها</b>\n\n"
             f"تعداد کل تراکنش‌ها: {transaction_count}\n"
@@ -621,26 +649,34 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="HTML"
         )
+        return
         
     elif data == "admin_stats^":
-        if user.id != config.ADMIN_USER_ID:
-            await query.answer("شما دسترسی به این بخش ندارید!")
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
             return
-            
+        role, permissions = row
+        allowed = []
+        if role == 'god':
+            allowed = [p[0] for p in ADMIN_PERMISSIONS]
+        elif permissions:
+            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
+        if "admin_stats" not in allowed:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
         await query.answer()
         # در اینجا می‌توانید آمار کلی سیستم را نمایش دهید
         c.execute("SELECT COUNT(*) FROM users")
         user_count = c.fetchone()[0]
-        
         c.execute("SELECT COUNT(*), SUM(amount) FROM transactions")
         result = c.fetchone()
         transaction_count = result[0] or 0
         total_amount = result[1] or 0
-        
         keyboard = [
             [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
         ]
-        
         await query.edit_message_text(
             f"📊 <b>آمار و گزارشات</b>\n\n"
             f"تعداد کل کاربران: {user_count}\n"
@@ -650,6 +686,128 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="HTML"
         )
+        return
+    elif data == "manage_admins^":
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+        role, permissions = row
+        allowed = []
+        if role == 'god':
+            allowed = [p[0] for p in ADMIN_PERMISSIONS]
+        elif permissions:
+            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
+        if "manage_admins" not in allowed:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+        if not is_god_admin(user.id):
+            await query.answer("دسترسی فقط برای ادمین گاد مجاز است.", show_alert=True)
+            return
+        admins = get_admins()
+        msg = "لیست ادمین‌ها:\n"
+        for a in admins:
+            msg += f"\n{a[0]} | نقش: {a[1]} | دسترسی: {a[2]}"
+        keyboard = [
+            [InlineKeyboardButton("➕ افزودن ادمین", callback_data="add_admin^")],
+            [InlineKeyboardButton("✏️ ویرایش دسترسی", callback_data="edit_admin^")],
+            [InlineKeyboardButton("❌ حذف ادمین", callback_data="remove_admin^")],
+            [InlineKeyboardButton("بازگشت", callback_data="userpanel^")]
+        ]
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
+        return
+    elif data == "add_admin^":
+        context.user_data['admin_action'] = 'add'
+        await query.edit_message_text("لطفاً آیدی عددی کاربر را ارسال کنید:")
+    elif data.startswith("set_role^"):
+        role = data.split('^')[1]
+        context.user_data['pending_role'] = role
+        context.user_data['pending_permissions'] = []
+        context.user_data['admin_action'] = 'select_permissions'
+        await query.edit_message_text(
+            "دسترسی‌های مورد نظر را انتخاب کنید:",
+            reply_markup=build_permissions_keyboard(context.user_data['pending_permissions'])
+        )
+        return
+    elif data.startswith("toggleperm^"):
+        if not is_god_admin(user.id):
+            await query.answer("دسترسی فقط برای ادمین گاد مجاز است.", show_alert=True)
+            return
+        perm = data.split("^")[1]
+        selected = context.user_data.get('pending_permissions', [])
+        if perm in selected:
+            selected.remove(perm)
+        else:
+            selected.append(perm)
+        context.user_data['pending_permissions'] = selected
+        await query.edit_message_text(
+            "دسترسی‌های مورد نظر را انتخاب کنید:",
+            reply_markup=build_permissions_keyboard(selected)
+        )
+        return
+    elif data == "confirm_add_admin^":
+        if not is_god_admin(user.id):
+            await query.answer("دسترسی فقط برای ادمین گاد مجاز است.", show_alert=True)
+            return
+        new_admin_id = context.user_data.get('new_admin_id')
+        role = context.user_data.get('pending_role')
+        permissions = ",".join(context.user_data.get('pending_permissions', []))
+        add_admin(new_admin_id, role, permissions)
+        await query.edit_message_text("ادمین جدید اضافه شد.")
+        try:
+            await context.bot.send_message(new_admin_id, f"شما به عنوان ادمین ({role}) به ربات اضافه شدید. دسترسی‌ها: {permissions}")
+        except:
+            pass
+        context.user_data['admin_action'] = None
+        context.user_data['new_admin_id'] = None
+        context.user_data['pending_role'] = None
+        context.user_data['pending_permissions'] = None
+        return
+    elif is_god_admin(user.id) and context.user_data.get('admin_action'):
+        action = context.user_data['admin_action']
+        if action == 'add':
+            try:
+                new_admin_id = int(data.split('^')[1])
+                context.user_data['new_admin_id'] = new_admin_id
+                keyboard = [
+                    [InlineKeyboardButton("ادمین معمولی", callback_data="set_role^admin")],
+                    [InlineKeyboardButton("ادمین گاد", callback_data="set_role^god")]
+                ]
+                await update.message.reply_text("نقش ادمین را انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
+                # مرحله بعدی با دکمه set_role^ انجام می‌شود
+                return
+            except:
+                await update.message.reply_text("آیدی عددی معتبر نیست.")
+                context.user_data['admin_action'] = None
+                return
+        elif action == 'edit':
+            try:
+                edit_admin_id = int(data.split('^')[1])
+                context.user_data['edit_admin_id'] = edit_admin_id
+                await update.message.reply_text("دسترسی جدید را به صورت کاما جدا وارد کنید (مثلاً: add_user,view_stats):")
+                context.user_data['admin_action'] = 'edit_permissions'
+                return
+            except:
+                await update.message.reply_text("آیدی عددی معتبر نیست.")
+                context.user_data['admin_action'] = None
+                return
+        elif action == 'edit_permissions':
+            edit_admin_id = context.user_data.get('edit_admin_id')
+            update_admin_permissions(edit_admin_id, data)
+            await update.message.reply_text("دسترسی ادمین به‌روزرسانی شد.")
+            context.user_data['admin_action'] = None
+            context.user_data['edit_admin_id'] = None
+            return
+        elif action == 'remove':
+            try:
+                remove_admin_id = int(data.split('^')[1])
+                remove_admin(remove_admin_id)
+                await update.message.reply_text("ادمین حذف شد.")
+            except:
+                await update.message.reply_text("آیدی عددی معتبر نیست.")
+            context.user_data['admin_action'] = None
+            return
     # پردازش تأیید یا رد کاربر
     elif data.startswith("approve_user^"):
         if user.id != config.ADMIN_USER_ID:
@@ -737,6 +895,51 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     message = update.message.text
     
+    # ویزارد مدیریت ادمین‌ها
+    if is_god_admin(user.id) and context.user_data.get('admin_action'):
+        action = context.user_data['admin_action']
+        if action == 'add':
+            try:
+                new_admin_id = int(message)
+                context.user_data['new_admin_id'] = new_admin_id
+                keyboard = [
+                    [InlineKeyboardButton("ادمین معمولی", callback_data="set_role^admin")],
+                    [InlineKeyboardButton("ادمین گاد", callback_data="set_role^god")]
+                ]
+                await update.message.reply_text("نقش ادمین را انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
+                return
+            except:
+                await update.message.reply_text("آیدی عددی معتبر نیست.")
+                context.user_data['admin_action'] = None
+                return
+        elif action == 'edit':
+            try:
+                edit_admin_id = int(message)
+                context.user_data['edit_admin_id'] = edit_admin_id
+                await update.message.reply_text("دسترسی جدید را به صورت کاما جدا وارد کنید (مثلاً: add_user,view_stats):")
+                context.user_data['admin_action'] = 'edit_permissions'
+                return
+            except:
+                await update.message.reply_text("آیدی عددی معتبر نیست.")
+                context.user_data['admin_action'] = None
+                return
+        elif action == 'edit_permissions':
+            edit_admin_id = context.user_data.get('edit_admin_id')
+            update_admin_permissions(edit_admin_id, message)
+            await update.message.reply_text("دسترسی ادمین به‌روزرسانی شد.")
+            context.user_data['admin_action'] = None
+            context.user_data['edit_admin_id'] = None
+            return
+        elif action == 'remove':
+            try:
+                remove_admin_id = int(message)
+                remove_admin(remove_admin_id)
+                await update.message.reply_text("ادمین حذف شد.")
+            except:
+                await update.message.reply_text("آیدی عددی معتبر نیست.")
+            context.user_data['admin_action'] = None
+            return
+    
     # بررسی تأیید کاربر
     is_approved = is_user_approved(user.id)
     if not is_approved:
@@ -780,20 +983,48 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['waiting_for_reason'] = False
             return
     
-    # اگر پیام با دستور شروع نشده باشد، منوی اصلی را نمایش می‌دهیم
-    is_member = await check_channel_membership(user.id, context)
-    if not is_member:
-        keyboard = [[InlineKeyboardButton("عضویت در کانال", url=config.CHANNEL_LINK)]]
+    # اگر پیام با دستور شروع نشده باشد، منوی اصلی را فقط زمانی نمایش بده که هیچ اکشن مدیریتی فعال نباشد
+    if not context.user_data.get('admin_action'):
         await update.message.reply_text(
-            f"کاربر گرامی، برای استفاده از {config.BOT_NAME} ابتدا باید عضو کانال رسمی ما شوید.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            f"کاربر گرامی\nلطفا یکی از گزینه‌های زیر رو برای {config.BOT_NAME} انتخاب کنید :",
+            reply_markup=main_menu_keyboard(user.id)
         )
-        return
-    
-    await update.message.reply_text(
-        f"کاربر گرامی\nلطفا یکی از گزینه‌های زیر رو برای {config.BOT_NAME} انتخاب کنید :",
-        reply_markup=main_menu_keyboard(user.id)
-    )
+
+# توابع کمکی برای مدیریت ادمین‌ها
+
+def is_god_admin(user_id):
+    c.execute("SELECT role FROM admins WHERE user_id=?", (user_id,))
+    row = c.fetchone()
+    return row and row[0] == 'god'
+
+def get_admins():
+    c.execute("SELECT user_id, role, permissions FROM admins")
+    return c.fetchall()
+
+def add_admin(user_id, role, permissions):
+    c.execute("INSERT OR REPLACE INTO admins (user_id, role, permissions) VALUES (?, ?, ?)", (user_id, role, permissions))
+    conn.commit()
+
+def remove_admin(user_id):
+    c.execute("DELETE FROM admins WHERE user_id=?", (user_id,))
+    conn.commit()
+
+def update_admin_permissions(user_id, permissions):
+    c.execute("UPDATE admins SET permissions=? WHERE user_id=?", (permissions, user_id))
+    conn.commit()
+
+def build_permissions_keyboard(selected_permissions):
+    keyboard = []
+    for perm, fa_title in ADMIN_PERMISSIONS:
+        is_selected = perm in selected_permissions
+        status = "✅" if is_selected else "❌"
+        keyboard.append([
+            InlineKeyboardButton(f"{fa_title}", callback_data="noop"),
+            InlineKeyboardButton(f"{status}", callback_data=f"toggleperm^{perm}")
+        ])
+    keyboard.append([InlineKeyboardButton("➕ افزودن", callback_data="confirm_add_admin^")])
+    keyboard.append([InlineKeyboardButton("بازگشت", callback_data="manage_admins^")])
+    return InlineKeyboardMarkup(keyboard)
 
 async def main():
     # ایجاد و پیکربندی برنامه
