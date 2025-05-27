@@ -315,7 +315,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(
             f"شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"  
             f"دلیل:\n-----------------\n\n"  
-            f"لطفاً دلیل امتیازدهی را بنویسید و ارسال کنید یا روی دکمه بازگشت کلیک کنید.",
+            f"لطفاً دلیل امتیازدهی را بنویسید و ارسال کنید.",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         
@@ -333,6 +333,11 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("اعتبار کافی ندارید!", reply_markup=main_menu_keyboard(user.id))
             return
         
+        # دریافت نام کاربر فرستنده از دیتابیس
+        c.execute("SELECT name FROM users WHERE user_id=?", (user.id,))
+        sender_result = c.fetchone()
+        sender_name = sender_result[0] if sender_result else "کاربر"
+        
         # دریافت اطلاعات کاربر مقصد
         c.execute("SELECT name FROM users WHERE user_id=?", (touser_id,))
         result = c.fetchone()
@@ -348,20 +353,55 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         c.execute("SELECT last_insert_rowid()")
         transaction_id = c.fetchone()[0]
         
-        # دریافت تاریخ و زمان فارسی
-        from datetime import datetime
-        import jdatetime  # نیاز به نصب پکیج jdatetime
-        now = jdatetime.datetime.now().strftime("%A %d %B %Y")
-        current_time = f"⏰ {now}"
+        # دریافت تاریخ و زمان شمسی و فارسی
+        import jdatetime
+        # نگاشت دستی روزها و ماه‌های فارسی
+        fa_weekdays = {
+            'Saturday': 'شنبه',
+            'Sunday': 'یکشنبه',
+            'Monday': 'دوشنبه',
+            'Tuesday': 'سه‌شنبه',
+            'Wednesday': 'چهارشنبه',
+            'Thursday': 'پنجشنبه',
+            'Friday': 'جمعه',
+        }
+        fa_months = {
+            'Farvardin': 'فروردین',
+            'Ordibehesht': 'اردیبهشت',
+            'Khordad': 'خرداد',
+            'Tir': 'تیر',
+            'Mordad': 'مرداد',
+            'Shahrivar': 'شهریور',
+            'Mehr': 'مهر',
+            'Aban': 'آبان',
+            'Azar': 'آذر',
+            'Dey': 'دی',
+            'Bahman': 'بهمن',
+            'Esfand': 'اسفند',
+        }
+        now = jdatetime.datetime.now()
+        weekday_en = now.strftime("%A")
+        month_en = now.strftime("%B")
+        weekday = fa_weekdays.get(weekday_en, weekday_en)
+        month = fa_months.get(month_en, month_en)
+        day = now.day
+        year = now.year
+        fa_date = f"{weekday} {day} {month} {year}"
+        current_time = f"⏰ {fa_date}"
         
         try:
             # ارسال پیام به کانال
             bot = context.bot
+            # دکمه شیشه‌ای برای امتیاز دادن در ربات
+            vote_keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🎯 امتیاز دادن در ربات", url=f"https://t.me/{bot.username}?start=start")]
+            ])
             channel_message = await bot.send_message(
                 chat_id=config.CHANNEL_ID,
-                text=f"{user.full_name} {amount} امتیاز به {touser_name} داد و نوشت : \n\n"
+                text=f"{sender_name} {amount} امتیاز به {touser_name} داد و نوشت : \n\n"
                      f"💬 {reason}\n\n"
-                     f"{current_time}"
+                     f"{current_time}",
+                reply_markup=vote_keyboard
             )
             
             # بروزرسانی message_id در دیتابیس
@@ -377,7 +417,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 try:
                     await bot.send_message(
                         chat_id=touser_id,
-                        text=f"🎉 {user.full_name} {amount} امتیاز بهت داد و نوشت : \n\n"
+                        text=f"🎉 {sender_name} {amount} امتیاز بهت داد و نوشت : \n\n"
                              f"💬 {reason}\n\n"
                              f"{current_time}",
                         reply_markup=InlineKeyboardMarkup(keyboard)
