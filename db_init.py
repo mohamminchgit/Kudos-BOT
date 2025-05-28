@@ -29,7 +29,7 @@
 
 import sqlite3
 import os
-from config import DB_PATH
+from config import DB_PATH, SEASON_ID
 
 # همیشه دیتابیس را باز کن (چه وجود داشته باشد چه نه)
 conn = sqlite3.connect(DB_PATH)
@@ -77,6 +77,42 @@ CREATE TABLE IF NOT EXISTS admins (
     permissions TEXT -- رشته‌ای از دسترسی‌ها (مثلاً: add_user,view_stats,...)
 )
 ''')
+
+# جدول سوالات ترین‌ها
+c.execute('''
+CREATE TABLE IF NOT EXISTS top_questions (
+    question_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    season_id INTEGER,
+    is_active INTEGER DEFAULT 1
+)
+''')
+
+# جدول رای‌های ترین‌ها
+c.execute('''
+CREATE TABLE IF NOT EXISTS top_votes (
+    vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    voted_for_user_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, question_id, season_id)
+)
+''')
+
+# اضافه کردن سوالات پیش‌فرض ترین‌ها اگر جدول خالی است
+c.execute("SELECT COUNT(*) FROM top_questions")
+if c.fetchone()[0] == 0:
+    default_questions = [
+        "مشتاق‌ترین همکارت کیه؟",
+        "اجتماعی‌ترین همکارت کیه؟",
+        "خوش‌بین‌ترین همکارت کیه؟",
+        "با احساس‌ترین همکارت کیه؟",
+        "رقابتی‌ترین همکارت کیه؟"
+    ]
+    for q in default_questions:
+        c.execute("INSERT INTO top_questions (text, season_id) VALUES (?, ?)", (q, SEASON_ID))
 
 conn.commit()
 conn.close()

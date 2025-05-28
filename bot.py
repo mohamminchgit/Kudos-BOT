@@ -12,12 +12,21 @@ logger = logging.getLogger(__name__)
 conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
 c = conn.cursor()
 
+# ایجاد جداول مورد نیاز در صورت عدم وجود
+def init_db():
+    # جداول ترین‌ها در db_init.py ساخته می‌شوند
+    pass
+
+# اجرای تابع ایجاد دیتابیس
+init_db()
+
 # لیست دسترسی‌های ادمین (مطابق با گزینه‌های پنل مدیریت)
 ADMIN_PERMISSIONS = [
     ("admin_users", "مدیریت کاربران"),
     ("admin_transactions", "مدیریت تراکنش"),
     ("admin_stats", "آمار و گزارشات"),
     ("manage_admins", "مدیریت ادمین‌ها"),
+    ("manage_questions", "مدیریت سوالات ترین‌ها"),
 ]
 
 def get_or_create_user(user):
@@ -34,7 +43,32 @@ def add_user(user):
 
 def main_menu_keyboard(user_id=None):
     keyboard = [
-        [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")],
+        [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")]
+    ]
+    
+    # بررسی آیا کاربر در فصل جاری به سوالات ترین‌ها پاسخ داده است
+    has_voted_all = False
+    if user_id:
+        c.execute("""
+            SELECT COUNT(*) FROM top_questions WHERE is_active=1 AND season_id=?
+        """, (config.SEASON_ID,))
+        total_questions = c.fetchone()[0]
+        
+        c.execute("""
+            SELECT COUNT(*) FROM top_votes 
+            WHERE user_id=? AND season_id=?
+        """, (user_id, config.SEASON_ID))
+        user_votes = c.fetchone()[0]
+        
+        has_voted_all = user_votes >= total_questions
+    
+    # اضافه کردن دکمه ترین‌ها با متن مناسب
+    if has_voted_all:
+        keyboard.append([InlineKeyboardButton("🏆 نتایج ترین‌های فصل", callback_data="top_results^")])
+    else:
+        keyboard.append([InlineKeyboardButton("🏆 ترین‌های فصل!", callback_data="top_vote^")])
+    
+    keyboard += [
         [InlineKeyboardButton("» پروفایل شما", callback_data="userprofile^"), InlineKeyboardButton("ردپای امتیازات", callback_data="historypoints^")],
         [InlineKeyboardButton("» راهنما", callback_data="help^"), InlineKeyboardButton("» پشتیبانی", url=config.SUPPORT_USERNAME)]
     ]
@@ -580,6 +614,9 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Add new broadcast button
         if "admin_users" in allowed:  # Using same permission as user management
             keyboard.append([InlineKeyboardButton("📢 پیام همگانی", callback_data="broadcast_menu^")])
+        # اضافه کردن بخش مدیریت ترین‌ها
+        if "manage_questions" in allowed:
+            keyboard.append([InlineKeyboardButton("🏆 مدیریت سوالات ترین‌ها", callback_data="manage_top_questions^")])
         keyboard.append([InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")])
         await query.answer()
         await query.edit_message_text(
@@ -589,308 +626,165 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
         return
-        
-    elif data == "admin_users^":
-        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
-        row = c.fetchone()
-        if not row:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        role, permissions = row
-        allowed = []
-        if role == 'god':
-            allowed = [p[0] for p in ADMIN_PERMISSIONS]
-        elif permissions:
-            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
-        if "admin_users" not in allowed:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        await query.answer()
-        # در اینجا می‌توانید لیست کاربران را نمایش دهید
-        c.execute("SELECT COUNT(*) FROM users")
-        user_count = c.fetchone()[0]
-        keyboard = [
-            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
-        ]
-        await query.edit_message_text(
-            f"👥 <b>مدیریت کاربران</b>\n\n"
-            f"تعداد کل کاربران: {user_count}\n\n"
-            f"این بخش در حال توسعه است...",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML"
-        )
-        return
-        
-    elif data == "admin_transactions^":
-        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
-        row = c.fetchone()
-        if not row:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        role, permissions = row
-        allowed = []
-        if role == 'god':
-            allowed = [p[0] for p in ADMIN_PERMISSIONS]
-        elif permissions:
-            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
-        if "admin_transactions" not in allowed:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        await query.answer()
-        # در اینجا می‌توانید آمار تراکنش‌ها را نمایش دهید
-        c.execute("SELECT COUNT(*), SUM(amount) FROM transactions")
-        result = c.fetchone()
-        transaction_count = result[0] or 0
-        total_amount = result[1] or 0
-        keyboard = [
-            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
-        ]
-        await query.edit_message_text(
-            f"💰 <b>مدیریت تراکنش‌ها</b>\n\n"
-            f"تعداد کل تراکنش‌ها: {transaction_count}\n"
-            f"مجموع امتیازات: {total_amount}\n\n"
-            f"این بخش در حال توسعه است...",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML"
-        )
-        return
-        
-    elif data == "admin_stats^":
-        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
-        row = c.fetchone()
-        if not row:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        role, permissions = row
-        allowed = []
-        if role == 'god':
-            allowed = [p[0] for p in ADMIN_PERMISSIONS]
-        elif permissions:
-            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
-        if "admin_stats" not in allowed:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        await query.answer()
-        # در اینجا می‌توانید آمار کلی سیستم را نمایش دهید
-        c.execute("SELECT COUNT(*) FROM users")
-        user_count = c.fetchone()[0]
-        c.execute("SELECT COUNT(*), SUM(amount) FROM transactions")
-        result = c.fetchone()
-        transaction_count = result[0] or 0
-        total_amount = result[1] or 0
-        keyboard = [
-            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
-        ]
-        await query.edit_message_text(
-            f"📊 <b>آمار و گزارشات</b>\n\n"
-            f"تعداد کل کاربران: {user_count}\n"
-            f"تعداد کل تراکنش‌ها: {transaction_count}\n"
-            f"مجموع امتیازات: {total_amount}\n\n"
-            f"این بخش در حال توسعه است...",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML"
-        )
-        return
-    elif data == "manage_admins^":
-        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
-        row = c.fetchone()
-        if not row:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        role, permissions = row
-        allowed = []
-        if role == 'god':
-            allowed = [p[0] for p in ADMIN_PERMISSIONS]
-        elif permissions:
-            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
-        if "manage_admins" not in allowed:
-            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
-            return
-        if not is_god_admin(user.id):
-            await query.answer("دسترسی فقط برای ادمین گاد مجاز است.", show_alert=True)
-            return
-        admins = get_admins()
-        msg = "لیست ادمین‌ها:\n"
-        for a in admins:
-            msg += f"\n{a[0]} | نقش: {a[1]} | دسترسی: {a[2]}"
-        keyboard = [
-            [InlineKeyboardButton("➕ افزودن ادمین", callback_data="add_admin^")],
-            [InlineKeyboardButton("✏️ ویرایش دسترسی", callback_data="edit_admin^")],
-            [InlineKeyboardButton("❌ حذف ادمین", callback_data="remove_admin^")],
-            [InlineKeyboardButton("بازگشت", callback_data="userpanel^")]
-        ]
-        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
-        return
-    elif data == "add_admin^":
-        context.user_data['admin_action'] = 'add'
-        await query.edit_message_text("لطفاً آیدی عددی کاربر را ارسال کنید:")
-    elif data.startswith("set_role^"):
-        role = data.split('^')[1]
-        context.user_data['pending_role'] = role
-        context.user_data['pending_permissions'] = []
-        context.user_data['admin_action'] = 'select_permissions'
-        await query.edit_message_text(
-            "دسترسی‌های مورد نظر را انتخاب کنید:",
-            reply_markup=build_permissions_keyboard(context.user_data['pending_permissions'])
-        )
-        return
-    elif data.startswith("toggleperm^"):
-        if not is_god_admin(user.id):
-            await query.answer("دسترسی فقط برای ادمین گاد مجاز است.", show_alert=True)
-            return
-        perm = data.split("^")[1]
-        selected = context.user_data.get('pending_permissions', [])
-        if perm in selected:
-            selected.remove(perm)
-        else:
-            selected.append(perm)
-        context.user_data['pending_permissions'] = selected
-        await query.edit_message_text(
-            "دسترسی‌های مورد نظر را انتخاب کنید:",
-            reply_markup=build_permissions_keyboard(selected)
-        )
-        return
-    elif data == "confirm_add_admin^":
-        if not is_god_admin(user.id):
-            await query.answer("دسترسی فقط برای ادمین گاد مجاز است.", show_alert=True)
-            return
-        new_admin_id = context.user_data.get('new_admin_id')
-        role = context.user_data.get('pending_role')
-        permissions = ",".join(context.user_data.get('pending_permissions', []))
-        add_admin(new_admin_id, role, permissions)
-        await query.edit_message_text("ادمین جدید اضافه شد.")
-        try:
-            await context.bot.send_message(new_admin_id, f"شما به عنوان ادمین ({role}) به ربات اضافه شدید. دسترسی‌ها: {permissions}")
-        except:
-            pass
-        context.user_data['admin_action'] = None
-        context.user_data['new_admin_id'] = None
-        context.user_data['pending_role'] = None
-        context.user_data['pending_permissions'] = None
-        return
-    elif is_god_admin(user.id) and context.user_data.get('admin_action'):
-        action = context.user_data['admin_action']
-        if action == 'add':
-            try:
-                new_admin_id = int(data.split('^')[1])
-                context.user_data['new_admin_id'] = new_admin_id
-                keyboard = [
-                    [InlineKeyboardButton("ادمین معمولی", callback_data="set_role^admin")],
-                    [InlineKeyboardButton("ادمین گاد", callback_data="set_role^god")]
-                ]
-                await update.message.reply_text("نقش ادمین را انتخاب کنید:", reply_markup=InlineKeyboardMarkup(keyboard))
-                # مرحله بعدی با دکمه set_role^ انجام می‌شود
-                return
-            except:
-                await update.message.reply_text("آیدی عددی معتبر نیست.")
-                context.user_data['admin_action'] = None
-                return
-        elif action == 'edit':
-            try:
-                edit_admin_id = int(data.split('^')[1])
-                context.user_data['edit_admin_id'] = edit_admin_id
-                await update.message.reply_text("دسترسی جدید را به صورت کاما جدا وارد کنید (مثلاً: add_user,view_stats):")
-                context.user_data['admin_action'] = 'edit_permissions'
-                return
-            except:
-                await update.message.reply_text("آیدی عددی معتبر نیست.")
-                context.user_data['admin_action'] = None
-                return
-        elif action == 'edit_permissions':
-            edit_admin_id = context.user_data.get('edit_admin_id')
-            update_admin_permissions(edit_admin_id, data)
-            await update.message.reply_text("دسترسی ادمین به‌روزرسانی شد.")
-            context.user_data['admin_action'] = None
-            context.user_data['edit_admin_id'] = None
-            return
-        elif action == 'remove':
-            try:
-                remove_admin_id = int(data.split('^')[1])
-                remove_admin(remove_admin_id)
-                await update.message.reply_text("ادمین حذف شد.")
-            except:
-                await update.message.reply_text("آیدی عددی معتبر نیست.")
-            context.user_data['admin_action'] = None
-            return
-    # پردازش تأیید یا رد کاربر
-    elif data.startswith("approve_user^"):
-        if user.id != config.ADMIN_USER_ID:
-            await query.answer("شما دسترسی به این بخش ندارید!")
-            return
-            
-        await query.answer()
-        user_id = int(data.split("^")[1])
-        
-        # دریافت اطلاعات کاربر از تلگرام
-        try:
-            bot = context.bot
-            chat_member = await bot.get_chat_member(chat_id=user_id, user_id=user_id)
-            target_user = chat_member.user
-            
-            # افزودن کاربر به دیتابیس
-            c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
-            if not c.fetchone():
-                c.execute("INSERT INTO users (user_id, username, name, balance) VALUES (?, ?, ?, ?)", 
-                         (user_id, target_user.username, target_user.full_name, 100))
-                conn.commit()
-                
-                # ارسال پیام به کاربر
-                await bot.send_message(
-                    chat_id=user_id,
-                    text=f"✅ <b>درخواست دسترسی شما تأیید شد</b>\n\n"
-                         f"اکنون می‌توانید از {config.BOT_NAME} استفاده کنید.\n"
-                         f"برای شروع، دستور /start را ارسال کنید.",
-                    parse_mode="HTML"
-                )
-                # اطلاع به ادمین
-                await query.edit_message_text(
-                    f"✅ کاربر {target_user.full_name} با موفقیت به سیستم اضافه شد و به او اطلاع داده شد.",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
-                )
-            else:
-                await query.edit_message_text(
-                    f"⚠️ کاربر {target_user.full_name} قبلاً در سیستم ثبت شده است.",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
-                )
-        except Exception as e:
-            logger.error(f"Error approving user: {e}")
-            await query.edit_message_text(
-                f"❌ خطا در تأیید کاربر: {e}",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
-            )
     
-    elif data.startswith("reject_user^"):
-        if user.id != config.ADMIN_USER_ID:
-            await query.answer("شما دسترسی به این بخش ندارید!")
+    # بخش مدیریت سوالات ترین‌ها
+    elif data == "manage_top_questions^":
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+        role, permissions = row
+        allowed = []
+        if role == 'god':
+            allowed = [p[0] for p in ADMIN_PERMISSIONS]
+        elif permissions:
+            allowed = [p.strip() for p in permissions.split(",") if p.strip()]
+        if "manage_questions" not in allowed:
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
             return
             
-        await query.answer()
-        user_id = int(data.split("^")[1])
+        questions = get_all_top_questions()
+        msg = "🏆 <b>مدیریت سوالات ترین‌ها</b>\n\n"
         
-        try:
-            bot = context.bot
-            chat_member = await bot.get_chat_member(chat_id=user_id, user_id=user_id)
-            target_user = chat_member.user
+        if questions:
+            for i, q in enumerate(questions):
+                status = "✅ فعال" if q[2] == 1 else "❌ غیرفعال"
+                msg += f"{i+1}. {q[1]} - <i>{status}</i>\n"
+        else:
+            msg += "هیچ سوالی تعریف نشده است."
             
-            # ارسال پیام به کاربر
-            await bot.send_message(
-                chat_id=user_id,
-                text=f"❌ <b>درخواست دسترسی شما رد شد</b>\n\n"
-                     f"متأسفانه درخواست شما برای دسترسی به {config.BOT_NAME} توسط ادمین رد شد.",
-                parse_mode="HTML"
-            )
+        keyboard = [
+            [InlineKeyboardButton("➕ افزودن سوال جدید", callback_data="add_top_question^")],
+            [InlineKeyboardButton("✏️ ویرایش سوال", callback_data="edit_top_question^")],
+            [InlineKeyboardButton("❌ حذف سوال", callback_data="delete_top_question^")],
+            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
+        ]
+        
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+        return
+        
+    elif data == "add_top_question^":
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
             
-            # اطلاع به ادمین
-            await query.edit_message_text(
-                f"❌ درخواست کاربر {target_user.full_name} رد شد و به او اطلاع داده شد.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
-            )
-        except Exception as e:
-            logger.error(f"Error rejecting user: {e}")
-            await query.edit_message_text(
-                f"❌ خطا در رد کاربر: {e}",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
-            )
+        context.user_data['admin_action'] = 'add_top_question'
+        await query.edit_message_text(
+            "لطفاً متن سوال جدید را وارد کنید:\n\n"
+            "مثال: بهترین همکارت کیه؟",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_top_questions^")]])
+        )
+        return
+        
+    elif data.startswith("edit_top_question^"):
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        if len(data.split("^")) > 1 and data.split("^")[1].isdigit():
+            question_id = int(data.split("^")[1])
+            c.execute("SELECT text, is_active FROM top_questions WHERE question_id=?", (question_id,))
+            question = c.fetchone()
+            
+            if question:
+                context.user_data['edit_question_id'] = question_id
+                context.user_data['admin_action'] = 'edit_top_question'
+                status = "فعال" if question[1] == 1 else "غیرفعال"
+                
+                keyboard = [
+                    [InlineKeyboardButton("✏️ ویرایش متن", callback_data=f"edit_question_text^{question_id}")],
+                    [InlineKeyboardButton("🔄 تغییر وضعیت", callback_data=f"toggle_question_status^{question_id}")],
+                    [InlineKeyboardButton("» بازگشت", callback_data="manage_top_questions^")]
+                ]
+                
+                await query.edit_message_text(
+                    f"ویرایش سوال:\n\n"
+                    f"متن فعلی: {question[0]}\n"
+                    f"وضعیت: {status}\n\n"
+                    f"لطفاً یکی از گزینه‌های زیر را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+        
+        # نمایش لیست سوالات برای انتخاب
+        questions = get_all_top_questions()
+        keyboard = []
+        for q in questions:
+            keyboard.append([InlineKeyboardButton(f"{q[1]}", callback_data=f"edit_top_question^{q[0]}")])
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="manage_top_questions^")])
+        
+        await query.edit_message_text(
+            "لطفاً سوال مورد نظر برای ویرایش را انتخاب کنید:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+        
+    elif data.startswith("edit_question_text^"):
+        question_id = int(data.split("^")[1])
+        context.user_data['edit_question_id'] = question_id
+        context.user_data['admin_action'] = 'edit_question_text'
+        
+        c.execute("SELECT text FROM top_questions WHERE question_id=?", (question_id,))
+        current_text = c.fetchone()[0]
+        
+        await query.edit_message_text(
+            f"لطفاً متن جدید برای سوال زیر را وارد کنید:\n\n"
+            f"متن فعلی: {current_text}",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data=f"edit_top_question^{question_id}")]])
+        )
+        return
+        
+    elif data.startswith("toggle_question_status^"):
+        question_id = int(data.split("^")[1])
+        
+        c.execute("SELECT is_active FROM top_questions WHERE question_id=?", (question_id,))
+        current_status = c.fetchone()[0]
+        new_status = 0 if current_status == 1 else 1
+        
+        c.execute("UPDATE top_questions SET is_active=? WHERE question_id=?", (new_status, question_id))
+        conn.commit()
+        
+        status_text = "فعال" if new_status == 1 else "غیرفعال"
+        await query.answer(f"وضعیت سوال به {status_text} تغییر یافت.")
+        
+        # بازگشت به صفحه ویرایش سوال
+        return await menu_callback(update, context)
+        
+    elif data.startswith("delete_top_question^"):
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        if len(data.split("^")) > 1 and data.split("^")[1].isdigit():
+            question_id = int(data.split("^")[1])
+            
+            # حذف سوال
+            c.execute("DELETE FROM top_questions WHERE question_id=?", (question_id,))
+            conn.commit()
+            
+            await query.answer("سوال با موفقیت حذف شد.")
+            return await menu_callback(update, context)
+        
+        # نمایش لیست سوالات برای انتخاب
+        questions = get_all_top_questions()
+        keyboard = []
+        for q in questions:
+            keyboard.append([InlineKeyboardButton(f"{q[1]}", callback_data=f"delete_top_question^{q[0]}")])
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="manage_top_questions^")])
+        
+        await query.edit_message_text(
+            "⚠️ لطفاً سوال مورد نظر برای حذف را انتخاب کنید:\n"
+            "توجه: این عملیات غیرقابل بازگشت است!",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
     elif data == "broadcast_menu^":
         keyboard = [
             [InlineKeyboardButton("📝 پیام همگانی دلخواه", callback_data="custom_broadcast^")],
@@ -953,6 +847,186 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"❌ ارسال ناموفق: {failed_count}",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="broadcast_menu^")]])
         )
+    elif data == "top_vote^":
+        # بررسی آیا کاربر قبلاً به همه سوالات پاسخ داده است
+        if has_user_voted_all_top_questions(user.id):
+            return await menu_callback(update, context)
+        
+        # بررسی آیا کاربر قبلاً هیچ سوالی را پاسخ نداده است (یعنی اولین بار است)
+        c.execute("SELECT COUNT(*) FROM top_votes WHERE user_id=? AND season_id=?", (user.id, config.SEASON_ID))
+        first_time = c.fetchone()[0] == 0
+        
+        if first_time:
+            # ارائه توضیحات و نمایش دکمه شروع
+            keyboard = [[InlineKeyboardButton("👈 شروع رأی‌گیری", callback_data="start_top_vote^")],
+                       [InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]]
+            
+            await query.edit_message_text(
+                f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+                f"به بخش «ترین‌ها» خوش آمدید!\n\n"
+                f"در این بخش شما به سؤالاتی درباره ویژگی‌های همکارانتان پاسخ می‌دهید.\n"
+                f"برای هر سؤال، می‌توانید یکی از همکارانتان را انتخاب کنید.\n\n"
+                f"<b>نکات مهم:</b>\n"
+                f"• شما فقط یک بار می‌توانید به هر سؤال پاسخ دهید.\n"
+                f"• بعد از پاسخ به همه سؤالات، نتایج کلی را مشاهده خواهید کرد.\n"
+                f"• رأی‌های شما به صورت عمومی در کانال منتشر خواهد شد.\n\n"
+                f"آیا آماده‌اید؟",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode="HTML"
+            )
+            return
+        
+        # ادامه روند معمول برای دریافت سوال بعدی
+        return await process_next_top_question(update, context)
+        
+    # شروع رأی‌گیری بعد از دیدن توضیحات
+    elif data == "start_top_vote^":
+        return await process_next_top_question(update, context)
+    
+    # انتخاب کاربر برای ترین‌ها
+    elif data.startswith("top_select^"):
+        parts = data.split("^")
+        question_id = int(parts[1])
+        voted_for_user_id = int(parts[2])
+        
+        # دریافت اطلاعات سوال و کاربر انتخاب شده
+        c.execute("SELECT text FROM top_questions WHERE question_id=?", (question_id,))
+        question = c.fetchone()
+        
+        c.execute("SELECT name FROM users WHERE user_id=?", (voted_for_user_id,))
+        user_name = c.fetchone()[0]
+        
+        if not question:
+            await query.answer("سوال مورد نظر یافت نشد!")
+            return await menu_callback(update, context)
+            
+        # ثبت رأی
+        if save_top_vote(user.id, question_id, voted_for_user_id):
+            await query.answer(f"رأی شما با موفقیت ثبت شد!")
+            
+            # بررسی آیا سوال بعدی وجود دارد
+            next_question = get_next_unanswered_question(user.id)
+            
+            if next_question:
+                # اگر سوال بعدی وجود دارد، مستقیماً به صفحه سوال بعدی برو
+                question_id, question_text = next_question
+                
+                # دریافت لیست کاربران برای رأی‌دهی (به جز خود کاربر)
+                users = get_all_users(exclude_id=user.id)
+                keyboard = []
+                row = []
+                for i, u in enumerate(users):
+                    row.append(InlineKeyboardButton(f"{i+1}- {u[1]}", callback_data=f"top_select^{question_id}^{u[0]}"))
+                    if len(row) == 2 or i == len(users) - 1:  # دو دکمه در هر ردیف
+                        if len(row) == 1 and i == len(users) - 1:  # اگر آخرین آیتم تنها در ردیف باشد
+                            keyboard.append(row)
+                        elif len(row) == 2:
+                            keyboard.append(row)
+                        row = []
+                
+                keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
+                
+                await query.edit_message_text(
+                    f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+                    f"<b>سوال:</b> {question_text}\n\n"
+                    f"لطفاً یکی از همکاران خود را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode="HTML"
+                )
+            else:
+                # اگر همه سوالات پاسخ داده شده‌اند، نمایش خلاصه رأی‌های کاربر
+                user_votes = get_user_top_votes(user.id)
+                summary = f"🎉 <b>تبریک!</b>\n\nشما به تمام سوالات ترین‌های فصل {config.SEASON_NAME} پاسخ دادید.\n\n<b>رأی‌های شما:</b>\n\n"
+                
+                for q_text, voted_name, _ in user_votes:
+                    summary += f"🔹 {q_text}\n"
+                    summary += f"✓ رأی شما: {voted_name}\n\n"
+                
+                keyboard = [[InlineKeyboardButton("» مشاهده نتایج", callback_data="top_results^")]]
+                
+                await query.edit_message_text(
+                    summary,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode="HTML"
+                )
+                
+                # ارسال پیام به کانال
+                try:
+                    bot = context.bot
+                    channel_message = f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+                    channel_message += f"از نظر <b>{user.full_name}</b>:\n\n"
+                    
+                    for q_text, voted_name, _ in user_votes:
+                        channel_message += f"🔹 {q_text} <b>{voted_name}</b>\n\n"
+                    
+                    await bot.send_message(
+                        chat_id=config.CHANNEL_ID,
+                        text=channel_message,
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending message to channel: {e}")
+                
+        else:
+            await query.answer("خطا در ثبت رأی!")
+            # در صورت خطا، به منوی اصلی برگرد
+            return await menu_callback(update, context)
+        return
+    
+    # نمایش نتایج ترین‌ها
+    elif data == "top_results^":
+        # دریافت سوالات فعال
+        questions = get_active_top_questions()
+        
+        if not questions:
+            await query.edit_message_text(
+                "هیچ سوال فعالی برای نمایش نتایج وجود ندارد!",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]])
+            )
+            return
+            
+        msg = f"🏆 <b>نتایج ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+        
+        # نمایش نتایج برای هر سوال
+        for q_id, q_text in questions:
+            results = get_top_results_for_question(q_id)
+            
+            msg += f"<b>🔹 {q_text}</b>\n"
+            
+            if results:
+                for i, (user_id, vote_count, name) in enumerate(results):
+                    medal = ""
+                    if i == 0:
+                        medal = "🥇 "
+                    elif i == 1:
+                        medal = "🥈 "
+                    elif i == 2:
+                        medal = "🥉 "
+                        
+                    msg += f"{medal}{name}: {vote_count} رأی\n"
+            else:
+                msg += "هنوز رأیی ثبت نشده است.\n"
+                
+            msg += "\n"
+            
+        # دریافت رأی‌های کاربر
+        user_votes = get_user_top_votes(user.id)
+        
+        if user_votes:
+            msg += "<b>👤 رأی‌های شما:</b>\n\n"
+            
+            for q_text, voted_name, _ in user_votes:
+                msg += f"🔹 {q_text}\n"
+                msg += f"✓ رأی شما: {voted_name}\n\n"
+        
+        keyboard = [[InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")]]
+        
+        await query.edit_message_text(
+            msg,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+        return
     else:
         await query.answer("در حال توسعه ...")
 
@@ -1003,6 +1077,45 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except:
                 await update.message.reply_text("آیدی عددی معتبر نیست.")
             context.user_data['admin_action'] = None
+            return
+        # مدیریت سوالات ترین‌ها
+        elif action == 'add_top_question':
+            question_text = message.strip()
+            
+            if not question_text:
+                await update.message.reply_text("متن سوال نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.")
+                return
+                
+            add_top_question(question_text)
+            
+            await update.message.reply_text(
+                f"✅ سوال جدید با موفقیت اضافه شد:\n\n{question_text}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» مدیریت سوالات", callback_data="manage_top_questions^")]])
+            )
+            
+            context.user_data['admin_action'] = None
+            return
+            
+        elif action == 'edit_question_text':
+            question_id = context.user_data.get('edit_question_id')
+            new_text = message.strip()
+            
+            if not new_text:
+                await update.message.reply_text("متن سوال نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.")
+                return
+                
+            c.execute("SELECT is_active FROM top_questions WHERE question_id=?", (question_id,))
+            is_active = c.fetchone()[0]
+            
+            update_top_question(question_id, new_text, is_active)
+            
+            await update.message.reply_text(
+                f"✅ سوال با موفقیت ویرایش شد:\n\n{new_text}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» مدیریت سوالات", callback_data="manage_top_questions^")]])
+            )
+            
+            context.user_data['admin_action'] = None
+            context.user_data['edit_question_id'] = None
             return
     
     # بررسی تأیید کاربر
@@ -1126,6 +1239,154 @@ def build_permissions_keyboard(selected_permissions):
     keyboard.append([InlineKeyboardButton("➕ افزودن", callback_data="confirm_add_admin^")])
     keyboard.append([InlineKeyboardButton("بازگشت", callback_data="manage_admins^")])
     return InlineKeyboardMarkup(keyboard)
+
+# بخش کمکی برای دریافت سوالات ترین‌ها
+def get_active_top_questions():
+    c.execute("""
+        SELECT question_id, text FROM top_questions 
+        WHERE is_active=1 AND season_id=?
+        ORDER BY question_id
+    """, (config.SEASON_ID,))
+    return c.fetchall()
+
+# بررسی آیا کاربر به همه سوالات ترین‌ها پاسخ داده است
+def has_user_voted_all_top_questions(user_id):
+    c.execute("""
+        SELECT COUNT(*) FROM top_questions WHERE is_active=1 AND season_id=?
+    """, (config.SEASON_ID,))
+    total_questions = c.fetchone()[0]
+    
+    c.execute("""
+        SELECT COUNT(*) FROM top_votes 
+        WHERE user_id=? AND season_id=?
+    """, (user_id, config.SEASON_ID))
+    user_votes = c.fetchone()[0]
+    
+    return user_votes >= total_questions
+
+# دریافت سوال بعدی که کاربر هنوز به آن پاسخ نداده
+def get_next_unanswered_question(user_id):
+    c.execute("""
+        SELECT q.question_id, q.text 
+        FROM top_questions q 
+        LEFT JOIN top_votes v ON q.question_id = v.question_id AND v.user_id = ? AND v.season_id = ?
+        WHERE q.is_active=1 AND q.season_id=? AND v.vote_id IS NULL
+        ORDER BY q.question_id
+        LIMIT 1
+    """, (user_id, config.SEASON_ID, config.SEASON_ID))
+    return c.fetchone()
+
+# ثبت رای ترین‌ها
+def save_top_vote(user_id, question_id, voted_for_user_id):
+    try:
+        c.execute("""
+            INSERT OR REPLACE INTO top_votes 
+            (user_id, question_id, voted_for_user_id, season_id) 
+            VALUES (?, ?, ?, ?)
+        """, (user_id, question_id, voted_for_user_id, config.SEASON_ID))
+        conn.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error saving top vote: {e}")
+        return False
+
+# دریافت نتایج ترین‌ها برای یک سوال خاص
+def get_top_results_for_question(question_id):
+    c.execute("""
+        SELECT v.voted_for_user_id, COUNT(*) as vote_count, u.name
+        FROM top_votes v
+        JOIN users u ON v.voted_for_user_id = u.user_id
+        WHERE v.question_id = ? AND v.season_id = ?
+        GROUP BY v.voted_for_user_id
+        ORDER BY vote_count DESC
+        LIMIT 5
+    """, (question_id, config.SEASON_ID))
+    return c.fetchall()
+
+# دریافت رای‌های کاربر در ترین‌ها
+def get_user_top_votes(user_id):
+    c.execute("""
+        SELECT q.text, u.name, v.vote_id
+        FROM top_votes v
+        JOIN top_questions q ON v.question_id = q.question_id
+        JOIN users u ON v.voted_for_user_id = u.user_id
+        WHERE v.user_id = ? AND v.season_id = ?
+        ORDER BY q.question_id
+    """, (user_id, config.SEASON_ID))
+    return c.fetchall()
+
+# مدیریت سوالات ترین‌ها (برای ادمین)
+def get_all_top_questions():
+    c.execute("""
+        SELECT question_id, text, is_active 
+        FROM top_questions 
+        WHERE season_id=?
+        ORDER BY question_id
+    """, (config.SEASON_ID,))
+    return c.fetchall()
+
+def add_top_question(text):
+    c.execute("""
+        INSERT INTO top_questions (text, season_id, is_active) 
+        VALUES (?, ?, 1)
+    """, (text, config.SEASON_ID))
+    conn.commit()
+
+def update_top_question(question_id, text, is_active):
+    c.execute("""
+        UPDATE top_questions 
+        SET text = ?, is_active = ? 
+        WHERE question_id = ?
+    """, (text, is_active, question_id))
+    conn.commit()
+
+def delete_top_question(question_id):
+    c.execute("DELETE FROM top_questions WHERE question_id = ?", (question_id,))
+    conn.commit()
+
+async def process_next_top_question(update, context):
+    query = update.callback_query
+    user = query.from_user
+    
+    # دریافت سوال بعدی که کاربر به آن پاسخ نداده
+    next_question = get_next_unanswered_question(user.id)
+    
+    if not next_question:
+        await query.answer("هیچ سوال فعالی برای پاسخ وجود ندارد!")
+        return await menu_callback(update, context)
+        
+    question_id, question_text = next_question
+    
+    # دریافت لیست کاربران برای رأی‌دهی (به جز خود کاربر)
+    users = get_all_users(exclude_id=user.id)
+    if not users:
+        await query.edit_message_text(
+            "هیچ کاربر دیگری برای رأی‌دهی وجود ندارد!",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]])
+        )
+        return
+    
+    keyboard = []
+    row = []
+    for i, u in enumerate(users):
+        row.append(InlineKeyboardButton(f"{i+1}- {u[1]}", callback_data=f"top_select^{question_id}^{u[0]}"))
+        if len(row) == 2 or i == len(users) - 1:  # دو دکمه در هر ردیف
+            if len(row) == 1 and i == len(users) - 1:  # اگر آخرین آیتم تنها در ردیف باشد
+                keyboard.append(row)
+            elif len(row) == 2:
+                keyboard.append(row)
+            row = []
+    
+    keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
+    
+    await query.edit_message_text(
+        f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+        f"<b>سوال:</b> {question_text}\n\n"
+        f"لطفاً یکی از همکاران خود را انتخاب کنید:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
+    )
+    return
 
 async def main():
     # ایجاد و پیکربندی برنامه
