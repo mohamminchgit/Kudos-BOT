@@ -149,11 +149,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # بررسی تأیید کاربر
     if not is_approved:
-        # ارسال پیام به کاربر
+        # ارسال پیام به کاربر با دکمه شیشه‌ای برای پشتیبانی
+        keyboard = [[InlineKeyboardButton(f"👤 پشتیبانی", url=f"{config.SUPPORT_USERNAME.strip('@')}")]]
         await update.message.reply_text(
             f"کاربر گرامی، شما هنوز دسترسی به {config.BOT_NAME} ندارید.\n\n"
-            f"برای اخذ دسترسی لطفاً با ادمین ارتباط بگیرید:\n"
-            f"👤 @{config.SUPPORT_USERNAME.split('/')[-1]}"
+            f"برای اخذ دسترسی لطفاً با پشتیبان تماس بگیرید:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
         
         # ارسال نوتیفیکیشن به ادمین
@@ -425,7 +426,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
                 # ارسال پیام به کاربر دریافت‌کننده
                 channel_id_num = config.CHANNEL_ID.replace("-100", "")
-                keyboard = [[InlineKeyboardButton("» مشاهده در کانال👁", url=f"https://t.me/c/{channel_id_num}/{channel_message.message_id}")]]
+                keyboard = [[InlineKeyboardButton("مشاهده در کانال", url=f"https://t.me/c/{channel_id_num}/{channel_message.message_id}")]]
                 
                 try:
                     await bot.send_message(
@@ -576,6 +577,9 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard.append([InlineKeyboardButton("📊 آمار و گزارشات", callback_data="admin_stats^")])
         if "manage_admins" in allowed:
             keyboard.append([InlineKeyboardButton("👤 مدیریت ادمین‌ها", callback_data="manage_admins^")])
+        # Add new broadcast button
+        if "admin_users" in allowed:  # Using same permission as user management
+            keyboard.append([InlineKeyboardButton("📢 پیام همگانی", callback_data="broadcast_menu^")])
         keyboard.append([InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")])
         await query.answer()
         await query.edit_message_text(
@@ -826,8 +830,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # افزودن کاربر به دیتابیس
             c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
             if not c.fetchone():
-                c.execute("INSERT INTO users (user_id, username, name) VALUES (?, ?, ?)", 
-                         (user_id, target_user.username, target_user.full_name))
+                c.execute("INSERT INTO users (user_id, username, name, balance) VALUES (?, ?, ?, ?)", 
+                         (user_id, target_user.username, target_user.full_name, 100))
                 conn.commit()
                 
                 # ارسال پیام به کاربر
@@ -838,7 +842,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                          f"برای شروع، دستور /start را ارسال کنید.",
                     parse_mode="HTML"
                 )
-                
                 # اطلاع به ادمین
                 await query.edit_message_text(
                     f"✅ کاربر {target_user.full_name} با موفقیت به سیستم اضافه شد و به او اطلاع داده شد.",
@@ -888,6 +891,68 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"❌ خطا در رد کاربر: {e}",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
             )
+    elif data == "broadcast_menu^":
+        keyboard = [
+            [InlineKeyboardButton("📝 پیام همگانی دلخواه", callback_data="custom_broadcast^")],
+            [InlineKeyboardButton("⭐️ پیام به کاربران بدون رای", callback_data="inactive_users_broadcast^")],
+            [InlineKeyboardButton("» بازگشت", callback_data="admin_panel^")]
+        ]
+        await query.edit_message_text(
+            "📢 <b>بخش پیام همگانی</b>\n\n"
+            "لطفاً نوع پیام همگانی را انتخاب کنید:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+
+    elif data == "custom_broadcast^":
+        context.user_data['admin_action'] = 'custom_broadcast'
+        await query.edit_message_text(
+            "📝 لطفاً متن پیام همگانی خود را ارسال کنید:\n\n"
+            "می‌توانید از فرمت HTML استفاده کنید.",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="broadcast_menu^")]])
+        )
+
+    elif data == "inactive_users_broadcast^":
+        # Get users who haven't voted yet
+        c.execute("""
+            SELECT u.user_id FROM users u 
+            LEFT JOIN transactions t ON u.user_id = t.user_id 
+            WHERE t.user_id IS NULL
+        """)
+        inactive_users = c.fetchall()
+        
+        if not inactive_users:
+            await query.answer("کاربر بدون رای وجود ندارد!", show_alert=True)
+            return
+            
+        broadcast_text = (
+            "👋 سلام دوست عزیز,\n\n"
+            "تا حالا به کسی در سیمرغ امتیاز دادی؟ اگر نه، می‌تونی از طریق ربات و گزینه «امتیازدهی به دیگران» وارد بشی و با چند کلیک ساده، از همکارایی که برات ارزشمند بودن قدردانی کنی.\n\n"
+            "🌟 حتی یه امتیاز کوچیک هم می‌تونه کلی انرژی مثبت منتقل کنه!\n"
+            "ممنون که همراه مایی 💙"
+        )
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for user_id in inactive_users:
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id[0],
+                    text=broadcast_text,
+                    parse_mode="HTML"
+                )
+                sent_count += 1
+            except Exception as e:
+                logger.error(f"Failed to send message to user {user_id[0]}: {e}")
+                failed_count += 1
+                
+        await query.edit_message_text(
+            f"✅ پیام به کاربران بدون رای ارسال شد\n\n"
+            f"✓ ارسال موفق: {sent_count}\n"
+            f"❌ ارسال ناموفق: {failed_count}",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="broadcast_menu^")]])
+        )
     else:
         await query.answer("در حال توسعه ...")
 
@@ -945,9 +1010,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_approved:
         # ارسال پیام به کاربر
         await update.message.reply_text(
-            f"کاربر گرامی، شما هنوز دسترسی به {config.BOT_NAME} ندارید.\n\n"
-            f"برای اخذ دسترسی لطفاً با ادمین ارتباط بگیرید:\n"
-            f"👤 @{config.SUPPORT_USERNAME.split('/')[-1]}"
+            f"برای اخذ دسترسی با پشتیبانی تماس بگیرید.\n\n"
+            f"آیدی پشتیبانی: {config.SUPPORT_USERNAME}",
+            reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("💎 پشتیبانی", url=f"https://t.me/{config.SUPPORT_USERNAME.strip('@')}")]
+            ])
         )
         return
     
@@ -989,6 +1056,40 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"کاربر گرامی\nلطفا یکی از گزینه‌های زیر رو برای {config.BOT_NAME} انتخاب کنید :",
             reply_markup=main_menu_keyboard(user.id)
         )
+    
+    # Handle custom broadcast
+    if context.user_data.get('admin_action') == 'custom_broadcast':
+        broadcast_text = update.message.text
+        
+        # Get all users
+        c.execute("SELECT user_id FROM users")
+        all_users = c.fetchall()
+        
+        sent_count = 0
+        failed_count = 0
+        
+        progress_message = await update.message.reply_text("در حال ارسال پیام همگانی...")
+        
+        for user_id in all_users:
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id[0],
+                    text=broadcast_text,
+                    parse_mode="HTML"
+                )
+                sent_count += 1
+            except Exception as e:
+                logger.error(f"Failed to send message to user {user_id[0]}: {e}")
+                failed_count += 1
+        
+        await progress_message.edit_text(
+            f"✅ پیام همگانی ارسال شد\n\n"
+            f"✓ ارسال موفق: {sent_count}\n"
+            f"❌ ارسال ناموفق: {failed_count}"
+        )
+        
+        context.user_data['admin_action'] = None
+        return
 
 # توابع کمکی برای مدیریت ادمین‌ها
 
