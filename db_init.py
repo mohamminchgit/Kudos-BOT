@@ -65,7 +65,12 @@ CREATE TABLE IF NOT EXISTS transactions (
 c.execute('''
 CREATE TABLE IF NOT EXISTS season (
     id INTEGER PRIMARY KEY,
-    name TEXT
+    name TEXT NOT NULL,
+    balance INTEGER DEFAULT 100,
+    is_active INTEGER DEFAULT 0,
+    start_date TEXT DEFAULT CURRENT_TIMESTAMP,
+    end_date TEXT,
+    description TEXT
 )
 ''')
 

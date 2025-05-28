@@ -46,27 +46,37 @@ def main_menu_keyboard(user_id=None):
         [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")]
     ]
     
+    # دریافت فصل فعال
+    active_season = get_active_season()
+    if not active_season:
+        # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+        season_id = config.SEASON_ID
+        season_name = config.SEASON_NAME
+    else:
+        season_id = active_season[0]
+        season_name = active_season[1]
+    
     # بررسی آیا کاربر در فصل جاری به سوالات ترین‌ها پاسخ داده است
     has_voted_all = False
     if user_id:
         c.execute("""
             SELECT COUNT(*) FROM top_questions WHERE is_active=1 AND season_id=?
-        """, (config.SEASON_ID,))
+        """, (season_id,))
         total_questions = c.fetchone()[0]
         
         c.execute("""
             SELECT COUNT(*) FROM top_votes 
             WHERE user_id=? AND season_id=?
-        """, (user_id, config.SEASON_ID))
+        """, (user_id, season_id))
         user_votes = c.fetchone()[0]
         
         has_voted_all = user_votes >= total_questions
     
     # اضافه کردن دکمه ترین‌ها با متن مناسب
     if has_voted_all:
-        keyboard.append([InlineKeyboardButton("🏆 نتایج ترین‌های فصل", callback_data="top_results^")])
+        keyboard.append([InlineKeyboardButton(f"🏆 نتایج ترین‌های {season_name}", callback_data="top_results^")])
     else:
-        keyboard.append([InlineKeyboardButton("🏆 ترین‌های فصل!", callback_data="top_vote^")])
+        keyboard.append([InlineKeyboardButton(f"🏆 ترین‌های {season_name}!", callback_data="top_vote^")])
     
     keyboard += [
         [InlineKeyboardButton("» پروفایل شما", callback_data="userprofile^"), InlineKeyboardButton("ردپای امتیازات", callback_data="historypoints^")],
@@ -263,6 +273,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("تابلوی امتیازات 🏆", callback_data="Scoreboard^")],
             [InlineKeyboardButton("امتیازهای شما 🎯", callback_data="receivedpoints^"), 
              InlineKeyboardButton("امتیازهایی که دادید 💬", callback_data="givenpoints^")],
+            [InlineKeyboardButton("🗂 آرشیو فصل‌ها", callback_data="season_archive^")],
             [InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]
         ]
         await query.edit_message_text(
@@ -282,6 +293,16 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("هیچ کاربر دیگری برای امتیازدهی وجود ندارد!", reply_markup=main_menu_keyboard(user.id))
             return
         
+        # دریافت فصل فعال
+        active_season = get_active_season()
+        if not active_season:
+            # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+            season_id = config.SEASON_ID
+            season_name = config.SEASON_NAME
+        else:
+            season_id = active_season[0]
+            season_name = active_season[1]
+        
         keyboard = []
         row = []
         for i, u in enumerate(users):
@@ -300,7 +321,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         balance = c.fetchone()[0]
         
         await query.edit_message_text(
-            f"#{config.SEASON_NAME}\n\n"
+            f"#{season_name}\n\n"
             f"تو {balance} امتیاز داری که می‌تونی به دوستات بدی 🎁\n\n"
             f"از بین افراد زیر، به کی می‌خوای امتیاز بدی؟ 🤔",
             reply_markup=InlineKeyboardMarkup(keyboard)
@@ -381,6 +402,14 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("اعتبار کافی ندارید!", reply_markup=main_menu_keyboard(user.id))
             return
         
+        # دریافت فصل فعال
+        active_season = get_active_season()
+        if not active_season:
+            # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+            season_id = config.SEASON_ID
+        else:
+            season_id = active_season[0]
+        
         # دریافت نام کاربر فرستنده از دیتابیس
         c.execute("SELECT name FROM users WHERE user_id=?", (user.id,))
         sender_result = c.fetchone()
@@ -394,7 +423,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # ثبت تراکنش و کم کردن اعتبار
         c.execute("UPDATE users SET balance = balance - ? WHERE user_id = ?", (amount, user.id))
         c.execute("INSERT INTO transactions (user_id, touser, amount, season_id, reason) VALUES (?, ?, ?, ?, ?)", 
-                 (user.id, touser_id, amount, config.SEASON_ID, reason))
+                 (user.id, touser_id, amount, season_id, reason))
         conn.commit()
         
         # دریافت آخرین شناسه تراکنش درج شده
@@ -617,6 +646,9 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # اضافه کردن بخش مدیریت ترین‌ها
         if "manage_questions" in allowed:
             keyboard.append([InlineKeyboardButton("🏆 مدیریت سوالات ترین‌ها", callback_data="manage_top_questions^")])
+        # اضافه کردن بخش مدیریت فصل‌ها
+        if "manage_questions" in allowed:  # با همان دسترسی مدیریت سوالات
+            keyboard.append([InlineKeyboardButton("🔄 مدیریت فصل‌ها", callback_data="manage_seasons^")])
         keyboard.append([InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")])
         await query.answer()
         await query.edit_message_text(
@@ -805,6 +837,45 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "می‌توانید از فرمت HTML استفاده کنید.",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="broadcast_menu^")]])
         )
+        
+    elif data == "confirm_broadcast^":
+        broadcast_text = context.user_data.get('broadcast_message')
+        if not broadcast_text:
+            await query.answer("پیامی برای ارسال یافت نشد!", show_alert=True)
+            return
+            
+        # دریافت لیست کاربران
+        c.execute("SELECT user_id FROM users")
+        all_users = c.fetchall()
+        
+        sent_count = 0
+        failed_count = 0
+        
+        progress_message = await query.edit_message_text("در حال ارسال پیام همگانی...")
+        
+        for user_id in all_users:
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id[0],
+                    text=broadcast_text,
+                    parse_mode="HTML"
+                )
+                sent_count += 1
+            except Exception as e:
+                logger.error(f"Failed to send message to user {user_id[0]}: {e}")
+                failed_count += 1
+                
+        await progress_message.edit_text(
+            f"✅ پیام همگانی ارسال شد\n\n"
+            f"✓ ارسال موفق: {sent_count}\n"
+            f"❌ ارسال ناموفق: {failed_count}",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="broadcast_menu^")]])
+        )
+        
+        # پاک کردن داده‌های موقت
+        context.user_data.pop('broadcast_message', None)
+        context.user_data.pop('admin_action', None)
+        return
 
     elif data == "inactive_users_broadcast^":
         # Get users who haven't voted yet
@@ -829,6 +900,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sent_count = 0
         failed_count = 0
         
+        progress_message = await query.edit_message_text("در حال ارسال پیام به کاربران بدون رای...")
+        
         for user_id in inactive_users:
             try:
                 await context.bot.send_message(
@@ -841,7 +914,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.error(f"Failed to send message to user {user_id[0]}: {e}")
                 failed_count += 1
                 
-        await query.edit_message_text(
+        await progress_message.edit_text(
             f"✅ پیام به کاربران بدون رای ارسال شد\n\n"
             f"✓ ارسال موفق: {sent_count}\n"
             f"❌ ارسال ناموفق: {failed_count}",
@@ -852,8 +925,18 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if has_user_voted_all_top_questions(user.id):
             return await menu_callback(update, context)
         
+        # دریافت فصل فعال
+        active_season = get_active_season()
+        if not active_season:
+            # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+            season_id = config.SEASON_ID
+            season_name = config.SEASON_NAME
+        else:
+            season_id = active_season[0]
+            season_name = active_season[1]
+        
         # بررسی آیا کاربر قبلاً هیچ سوالی را پاسخ نداده است (یعنی اولین بار است)
-        c.execute("SELECT COUNT(*) FROM top_votes WHERE user_id=? AND season_id=?", (user.id, config.SEASON_ID))
+        c.execute("SELECT COUNT(*) FROM top_votes WHERE user_id=? AND season_id=?", (user.id, season_id))
         first_time = c.fetchone()[0] == 0
         
         if first_time:
@@ -862,14 +945,14 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                        [InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]]
             
             await query.edit_message_text(
-                f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+                f"🏆 <b>ترین‌های فصل {season_name}</b>\n\n"
                 f"به بخش «ترین‌ها» خوش آمدید!\n\n"
                 f"در این بخش شما به سؤالاتی درباره ویژگی‌های همکارانتان پاسخ می‌دهید.\n"
                 f"برای هر سؤال، می‌توانید یکی از همکارانتان را انتخاب کنید.\n\n"
                 f"<b>نکات مهم:</b>\n"
                 f"• شما فقط یک بار می‌توانید به هر سؤال پاسخ دهید.\n"
                 f"• بعد از پاسخ به همه سؤالات، نتایج کلی را مشاهده خواهید کرد.\n"
-                f"• رأی‌های شما به صورت عمومی در کانال منتشر خواهد شد.\n\n"
+                f"• رأی‌های شما به صورت محرمانه ثبت می‌شوند و فقط به فردی که به او رأی داده‌اید اطلاع داده می‌شود.\n\n"
                 f"آیا آماده‌اید؟",
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode="HTML"
@@ -889,6 +972,16 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         question_id = int(parts[1])
         voted_for_user_id = int(parts[2])
         
+        # دریافت فصل فعال
+        active_season = get_active_season()
+        if not active_season:
+            # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+            season_id = config.SEASON_ID
+            season_name = config.SEASON_NAME
+        else:
+            season_id = active_season[0]
+            season_name = active_season[1]
+        
         # دریافت اطلاعات سوال و کاربر انتخاب شده
         c.execute("SELECT text FROM top_questions WHERE question_id=?", (question_id,))
         question = c.fetchone()
@@ -903,6 +996,19 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # ثبت رأی
         if save_top_vote(user.id, question_id, voted_for_user_id):
             await query.answer(f"رأی شما با موفقیت ثبت شد!")
+            
+            # ارسال پیام به فرد انتخاب شده
+            try:
+                bot = context.bot
+                await bot.send_message(
+                    chat_id=voted_for_user_id,
+                    text=f"🌟 <b>تبریک!</b>\n\n"
+                         f"از نظر <b>{user.full_name}</b> شما «{question[0]}» هستید!\n\n"
+                         f"🏆 این رأی در ترین‌های فصل {season_name} ثبت شد.",
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.error(f"Error sending message to voted user: {e}")
             
             # بررسی آیا سوال بعدی وجود دارد
             next_question = get_next_unanswered_question(user.id)
@@ -927,7 +1033,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
                 
                 await query.edit_message_text(
-                    f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+                    f"🏆 <b>ترین‌های فصل {season_name}</b>\n\n"
                     f"<b>سوال:</b> {question_text}\n\n"
                     f"لطفاً یکی از همکاران خود را انتخاب کنید:",
                     reply_markup=InlineKeyboardMarkup(keyboard),
@@ -936,7 +1042,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 # اگر همه سوالات پاسخ داده شده‌اند، نمایش خلاصه رأی‌های کاربر
                 user_votes = get_user_top_votes(user.id)
-                summary = f"🎉 <b>تبریک!</b>\n\nشما به تمام سوالات ترین‌های فصل {config.SEASON_NAME} پاسخ دادید.\n\n<b>رأی‌های شما:</b>\n\n"
+                summary = f"🎉 <b>تبریک!</b>\n\nشما به تمام سوالات ترین‌های فصل {season_name} پاسخ دادید.\n\n<b>رأی‌های شما:</b>\n\n"
                 
                 for q_text, voted_name, _ in user_votes:
                     summary += f"🔹 {q_text}\n"
@@ -949,24 +1055,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode="HTML"
                 )
-                
-                # ارسال پیام به کانال
-                try:
-                    bot = context.bot
-                    channel_message = f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
-                    channel_message += f"از نظر <b>{user.full_name}</b>:\n\n"
-                    
-                    for q_text, voted_name, _ in user_votes:
-                        channel_message += f"🔹 {q_text} <b>{voted_name}</b>\n\n"
-                    
-                    await bot.send_message(
-                        chat_id=config.CHANNEL_ID,
-                        text=channel_message,
-                        parse_mode="HTML"
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending message to channel: {e}")
-                
         else:
             await query.answer("خطا در ثبت رأی!")
             # در صورت خطا، به منوی اصلی برگرد
@@ -975,6 +1063,16 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # نمایش نتایج ترین‌ها
     elif data == "top_results^":
+        # دریافت فصل فعال
+        active_season = get_active_season()
+        if not active_season:
+            # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+            season_id = config.SEASON_ID
+            season_name = config.SEASON_NAME
+        else:
+            season_id = active_season[0]
+            season_name = active_season[1]
+            
         # دریافت سوالات فعال
         questions = get_active_top_questions()
         
@@ -985,7 +1083,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
             
-        msg = f"🏆 <b>نتایج ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+        msg = f"🏆 <b>نتایج ترین‌های فصل {season_name}</b>\n\n"
         
         # نمایش نتایج برای هر سوال
         for q_id, q_text in questions:
@@ -1027,6 +1125,375 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
         return
+    elif data == "manage_seasons^":
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        seasons = get_all_seasons()
+        active_season = get_active_season()
+        
+        msg = "🔄 <b>مدیریت فصل‌ها</b>\n\n"
+        
+        if active_season:
+            msg += f"<b>فصل فعال:</b> {active_season[1]} (اعتبار: {active_season[2]})\n"
+            msg += f"شروع: {active_season[3]}\n\n"
+        else:
+            msg += "<b>⚠️ هیچ فصلی فعال نیست!</b>\n\n"
+        
+        if seasons:
+            msg += "<b>لیست فصل‌ها:</b>\n"
+            for i, season in enumerate(seasons):
+                status = "✅ فعال" if season[3] == 1 else "❌ غیرفعال"
+                msg += f"{i+1}. {season[1]} - اعتبار: {season[2]} - {status}\n"
+        else:
+            msg += "هیچ فصلی تعریف نشده است."
+            
+        keyboard = [
+            [InlineKeyboardButton("➕ ایجاد فصل جدید", callback_data="add_season^")],
+            [InlineKeyboardButton("✏️ ویرایش فصل", callback_data="edit_season^")],
+            [InlineKeyboardButton("✅ فعال/غیرفعال کردن فصل", callback_data="toggle_season^")],
+            [InlineKeyboardButton("❌ حذف فصل", callback_data="delete_season^")],
+            [InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]
+        ]
+        
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+        return
+        
+    elif data == "add_season^":
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        context.user_data['admin_action'] = 'add_season'
+        context.user_data['season_step'] = 'name'
+        
+        await query.edit_message_text(
+            "لطفاً نام فصل جدید را وارد کنید:",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
+        )
+        return
+        
+    elif data.startswith("edit_season^"):
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        if len(data.split("^")) > 1 and data.split("^")[1].isdigit():
+            season_id = int(data.split("^")[1])
+            c.execute("SELECT id, name, balance, is_active, description FROM season WHERE id=?", (season_id,))
+            season = c.fetchone()
+            
+            if season:
+                context.user_data['edit_season_id'] = season_id
+                
+                keyboard = [
+                    [InlineKeyboardButton("✏️ ویرایش نام", callback_data=f"edit_season_name^{season_id}")],
+                    [InlineKeyboardButton("💰 ویرایش اعتبار", callback_data=f"edit_season_balance^{season_id}")],
+                    [InlineKeyboardButton("📝 ویرایش توضیحات", callback_data=f"edit_season_desc^{season_id}")],
+                    [InlineKeyboardButton("» بازگشت", callback_data="manage_seasons^")]
+                ]
+                
+                status = "فعال" if season[3] == 1 else "غیرفعال"
+                
+                await query.edit_message_text(
+                    f"ویرایش فصل:\n\n"
+                    f"نام: {season[1]}\n"
+                    f"اعتبار: {season[2]}\n"
+                    f"وضعیت: {status}\n"
+                    f"توضیحات: {season[4] or '-'}\n\n"
+                    f"لطفاً گزینه مورد نظر برای ویرایش را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+        
+        # نمایش لیست فصل‌ها برای انتخاب
+        seasons = get_all_seasons()
+        keyboard = []
+        for s in seasons:
+            keyboard.append([InlineKeyboardButton(f"{s[1]}", callback_data=f"edit_season^{s[0]}")])
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="manage_seasons^")])
+        
+        await query.edit_message_text(
+            "لطفاً فصل مورد نظر برای ویرایش را انتخاب کنید:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+        
+    elif data.startswith("edit_season_name^"):
+        season_id = int(data.split("^")[1])
+        context.user_data['edit_season_id'] = season_id
+        context.user_data['admin_action'] = 'edit_season_name'
+        
+        c.execute("SELECT name FROM season WHERE id=?", (season_id,))
+        current_name = c.fetchone()[0]
+        
+        await query.edit_message_text(
+            f"لطفاً نام جدید برای فصل را وارد کنید:\n\n"
+            f"نام فعلی: {current_name}",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data=f"edit_season^{season_id}")]])
+        )
+        return
+        
+    elif data.startswith("edit_season_balance^"):
+        season_id = int(data.split("^")[1])
+        context.user_data['edit_season_id'] = season_id
+        context.user_data['admin_action'] = 'edit_season_balance'
+        
+        c.execute("SELECT balance FROM season WHERE id=?", (season_id,))
+        current_balance = c.fetchone()[0]
+        
+        await query.edit_message_text(
+            f"لطفاً اعتبار جدید برای فصل را وارد کنید:\n\n"
+            f"اعتبار فعلی: {current_balance}\n\n"
+            f"⚠️ توجه: این مقدار اعتباری است که در صورت فعال‌سازی فصل به همه کاربران داده می‌شود.",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data=f"edit_season^{season_id}")]])
+        )
+        return
+        
+    elif data.startswith("edit_season_desc^"):
+        season_id = int(data.split("^")[1])
+        context.user_data['edit_season_id'] = season_id
+        context.user_data['admin_action'] = 'edit_season_desc'
+        
+        c.execute("SELECT description FROM season WHERE id=?", (season_id,))
+        current_desc = c.fetchone()[0] or "بدون توضیحات"
+        
+        await query.edit_message_text(
+            f"لطفاً توضیحات جدید برای فصل را وارد کنید:\n\n"
+            f"توضیحات فعلی: {current_desc}",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data=f"edit_season^{season_id}")]])
+        )
+        return
+        
+    elif data.startswith("toggle_season^"):
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        if len(data.split("^")) > 1 and data.split("^")[1].isdigit():
+            season_id = int(data.split("^")[1])
+            c.execute("SELECT is_active, name, balance FROM season WHERE id=?", (season_id,))
+            result = c.fetchone()
+            
+            if not result:
+                await query.answer("فصل مورد نظر یافت نشد!", show_alert=True)
+                return await menu_callback(update, context)
+                
+            is_active, name, balance = result
+            
+            if is_active == 1:
+                # غیرفعال کردن فصل
+                end_season(season_id)
+                await query.answer(f"فصل {name} غیرفعال شد.")
+                # بازگشت به منوی مدیریت فصل‌ها
+                data = "manage_seasons^"
+                await menu_callback(update, context)
+                return
+            else:
+                # فعال کردن فصل
+                season_balance = activate_season(season_id)
+                
+                # ارسال پیام به کانال - فقط یک بار
+                try:
+                    bot = context.bot
+                    channel_message = f"🎉 <b>فصل جدید آغاز شد!</b> 🎉\n\n"
+                    channel_message += f"نام فصل: <b>{name}</b>\n"
+                    channel_message += f"اعتبار فصل: <b>{balance}</b>\n\n"
+                    
+                    c.execute("SELECT description FROM season WHERE id=?", (season_id,))
+                    desc = c.fetchone()[0]
+                    if desc:
+                        channel_message += f"<b>توضیحات:</b>\n{desc}\n\n"
+                    
+                    channel_message += "اکنون می‌توانید وارد ربات شوید و از اعتبار خود برای امتیازدهی استفاده کنید."
+                    
+                    # دکمه شیشه‌ای برای ورود به ربات
+                    keyboard = [[InlineKeyboardButton("🎯 ورود به ربات", url=f"https://t.me/{bot.username}?start=start")]]
+                    
+                    await bot.send_message(
+                        chat_id=config.CHANNEL_ID,
+                        text=channel_message,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending message to channel: {e}")
+                
+                await query.answer(f"فصل {name} فعال شد و به همه کاربران {balance} اعتبار داده شد.")
+                
+                # بازگشت به منوی مدیریت فصل‌ها
+                data = "manage_seasons^"
+                await menu_callback(update, context)
+                return
+        
+        # نمایش لیست فصل‌ها برای انتخاب
+        seasons = get_all_seasons()
+        keyboard = []
+        for s in seasons:
+            status = "✅ فعال" if s[3] == 1 else "❌ غیرفعال"
+            keyboard.append([InlineKeyboardButton(f"{s[1]} - {status}", callback_data=f"toggle_season^{s[0]}")])
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="manage_seasons^")])
+        
+        await query.edit_message_text(
+            "لطفاً فصل مورد نظر برای فعال/غیرفعال کردن را انتخاب کنید:\n\n"
+            "⚠️ توجه: با فعال کردن یک فصل، فصل قبلی غیرفعال می‌شود.",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+        
+    elif data.startswith("delete_season^"):
+        c.execute("SELECT role, permissions FROM admins WHERE user_id=?", (user.id,))
+        row = c.fetchone()
+        if not row or (row[0] != 'god' and "manage_questions" not in row[1].split(",")):
+            await query.answer("شما به این بخش دسترسی ندارید!", show_alert=True)
+            return
+            
+        if len(data.split("^")) > 1 and data.split("^")[1].isdigit():
+            season_id = int(data.split("^")[1])
+            
+            c.execute("SELECT is_active FROM season WHERE id=?", (season_id,))
+            result = c.fetchone()
+            
+            if not result:
+                await query.answer("فصل مورد نظر یافت نشد!", show_alert=True)
+                return await menu_callback(update, context)
+                
+            if result[0] == 1:
+                await query.answer("نمی‌توان فصل فعال را حذف کرد!", show_alert=True)
+                return await menu_callback(update, context)
+            
+            # حذف فصل
+            if delete_season(season_id):
+                await query.answer("فصل با موفقیت حذف شد.")
+                # بازگشت به منوی مدیریت فصل‌ها
+                data = "manage_seasons^"
+                await menu_callback(update, context)
+                return
+            else:
+                await query.answer("خطا در حذف فصل!")
+                return await menu_callback(update, context)
+        
+        # نمایش لیست فصل‌های غیرفعال برای انتخاب
+        c.execute("SELECT id, name FROM season WHERE is_active=0")
+        inactive_seasons = c.fetchall()
+        
+        if not inactive_seasons:
+            await query.answer("هیچ فصل غیرفعالی برای حذف وجود ندارد!", show_alert=True)
+            return await menu_callback(update, context)
+        
+        keyboard = []
+        for s in inactive_seasons:
+            keyboard.append([InlineKeyboardButton(f"{s[1]}", callback_data=f"delete_season^{s[0]}")])
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="manage_seasons^")])
+        
+        await query.edit_message_text(
+            "⚠️ لطفاً فصل مورد نظر برای حذف را انتخاب کنید:\n"
+            "توجه: این عملیات غیرقابل بازگشت است!",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+    elif data.startswith("season_archive^"):
+        parts = data.split("^")
+        
+        # دریافت لیست تمام فصل‌ها
+        if len(parts) == 1:
+            seasons = get_all_seasons()
+            
+            if not seasons:
+                await query.edit_message_text(
+                    "هیچ فصلی تعریف نشده است!",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="historypoints^")]])
+                )
+                return
+                
+            keyboard = []
+            for s in seasons:
+                keyboard.append([InlineKeyboardButton(f"{s[1]}", callback_data=f"season_archive^{s[0]}")])
+            keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="historypoints^")])
+            
+            await query.edit_message_text(
+                "🗂 <b>آرشیو فصل‌ها</b>\n\n"
+                "لطفاً فصل مورد نظر را انتخاب کنید:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode="HTML"
+            )
+            return
+            
+        # نمایش اطلاعات یک فصل خاص
+        elif len(parts) > 1 and parts[1].isdigit():
+            season_id = int(parts[1])
+            
+            c.execute("SELECT name FROM season WHERE id=?", (season_id,))
+            season_name = c.fetchone()
+            
+            if not season_name:
+                await query.answer("فصل مورد نظر یافت نشد!")
+                return await menu_callback(update, context)
+                
+            season_name = season_name[0]
+            
+            # دریافت 10 نفر برتر فصل
+            scoreboard = get_season_scoreboard(season_id)
+            
+            # دریافت آمار کاربر در این فصل
+            stats = get_user_season_stats(user.id, season_id)
+            
+            msg = f"🏆 <b>آرشیو فصل {season_name}</b>\n\n"
+            
+            # نمایش 10 نفر برتر
+            msg += "<b>🥇 نفرات برتر:</b>\n\n"
+            
+            if scoreboard:
+                for i, (user_id, total, name) in enumerate(scoreboard):
+                    medal = ""
+                    if i == 0:
+                        medal = "🥇 "
+                    elif i == 1:
+                        medal = "🥈 "
+                    elif i == 2:
+                        medal = "🥉 "
+                        
+                    # برجسته کردن کاربر جاری
+                    if user_id == user.id:
+                        name = f"<tg-spoiler>{name}</tg-spoiler>"
+                        
+                    msg += f"{i+1}- {medal}{name}: <b>{total}</b> امتیاز\n"
+            else:
+                msg += "هیچ امتیازی در این فصل ثبت نشده است.\n"
+                
+            msg += "\n" + "-" * 30 + "\n\n"
+            
+            # نمایش آمار کاربر
+            msg += f"<b>📊 آمار من در فصل {season_name}:</b>\n\n"
+            
+            msg += f"• تعداد امتیازهای دریافتی: {stats['received_count']} (مجموع: {stats['received_amount']})\n"
+            msg += f"• تعداد امتیازهای داده شده: {stats['given_count']} (مجموع: {stats['given_amount']})\n\n"
+            
+            # نمایش ترین‌های کاربر
+            if stats['top_votes']:
+                msg += "<b>🏆 ترین‌های من از نظر دیگران:</b>\n\n"
+                
+                for q_text, vote_count, voters in stats['top_votes']:
+                    msg += f"• {q_text} ({vote_count} رأی)\n"
+                    msg += f"  از نظر: {voters}\n\n"
+            
+            keyboard = [[InlineKeyboardButton("» بازگشت", callback_data="season_archive^")]]
+            
+            await query.edit_message_text(
+                msg,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode="HTML"
+            )
+            return
     else:
         await query.answer("در حال توسعه ...")
 
@@ -1034,7 +1501,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     message = update.message.text
     
-    # ویزارد مدیریت ادمین‌ها
+    # ویزارد مدیریت ادمین‌ها و فصل‌ها
     if is_god_admin(user.id) and context.user_data.get('admin_action'):
         action = context.user_data['admin_action']
         if action == 'add':
@@ -1117,19 +1584,248 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['admin_action'] = None
             context.user_data['edit_question_id'] = None
             return
-    
-    # بررسی تأیید کاربر
-    is_approved = is_user_approved(user.id)
-    if not is_approved:
-        # ارسال پیام به کاربر
-        await update.message.reply_text(
-            f"برای اخذ دسترسی با پشتیبانی تماس بگیرید.\n\n"
-            f"آیدی پشتیبانی: {config.SUPPORT_USERNAME}",
-            reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("💎 پشتیبانی", url=f"https://t.me/{config.SUPPORT_USERNAME.strip('@')}")]
-            ])
-        )
-        return
+            
+        # مدیریت فصل‌ها
+        elif action == 'add_season':
+            current_step = context.user_data.get('season_step', 'name')
+            
+            if current_step == 'name':
+                name = message.strip()
+                if not name:
+                    await update.message.reply_text("نام فصل نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.")
+                    return
+                
+                context.user_data['season_name'] = name
+                context.user_data['season_step'] = 'balance'
+                
+                await update.message.reply_text(
+                    f"نام فصل: {name}\n\n"
+                    f"لطفاً مقدار اعتبار فصل را به صورت عدد وارد کنید:\n"
+                    f"(این مقدار اعتباری است که در صورت فعال‌سازی فصل به همه کاربران داده می‌شود)",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
+                )
+                return
+                
+            elif current_step == 'balance':
+                try:
+                    balance = int(message.strip())
+                    if balance <= 0:
+                        await update.message.reply_text("اعتبار فصل باید عددی مثبت باشد. لطفاً دوباره تلاش کنید.")
+                        return
+                        
+                    context.user_data['season_balance'] = balance
+                    context.user_data['season_step'] = 'description'
+                    
+                    await update.message.reply_text(
+                        f"نام فصل: {context.user_data['season_name']}\n"
+                        f"اعتبار فصل: {balance}\n\n"
+                        f"لطفاً توضیحات فصل را وارد کنید (اختیاری):\n"
+                        f"در صورت عدم نیاز به توضیحات، عبارت 'بدون توضیحات' را وارد کنید.",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
+                    )
+                    return
+                    
+                except ValueError:
+                    await update.message.reply_text("لطفاً یک عدد صحیح وارد کنید.")
+                    return
+                    
+            elif current_step == 'description':
+                description = message.strip()
+                if description.lower() == 'بدون توضیحات':
+                    description = ""
+                
+                name = context.user_data['season_name']
+                balance = context.user_data['season_balance']
+                
+                # ایجاد فصل جدید
+                season_id = add_season(name, balance, description)
+                
+                keyboard = [
+                    [InlineKeyboardButton("✅ فعال‌سازی فصل", callback_data=f"toggle_season^{season_id}")],
+                    [InlineKeyboardButton("» بازگشت به مدیریت فصل‌ها", callback_data="manage_seasons^")]
+                ]
+                
+                await update.message.reply_text(
+                    f"✅ فصل جدید با موفقیت ایجاد شد:\n\n"
+                    f"نام: {name}\n"
+                    f"اعتبار: {balance}\n"
+                    f"توضیحات: {description or '-'}\n\n"
+                    f"وضعیت: غیرفعال\n\n"
+                    f"می‌توانید فصل را فعال کنید یا به مدیریت فصل‌ها بازگردید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                
+                # پاک کردن اطلاعات موقت
+                context.user_data['admin_action'] = None
+                context.user_data['season_step'] = None
+                context.user_data['season_name'] = None
+                context.user_data['season_balance'] = None
+                return
+                
+        elif action == 'edit_season_name':
+            season_id = context.user_data.get('edit_season_id')
+            new_name = message.strip()
+            
+            if not new_name:
+                await update.message.reply_text("نام فصل نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.")
+                return
+                
+            update_season(season_id, name=new_name)
+            
+            await update.message.reply_text(
+                f"✅ نام فصل با موفقیت به «{new_name}» تغییر یافت.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data=f"edit_season^{season_id}")]])
+            )
+            
+            context.user_data['admin_action'] = None
+            context.user_data['edit_season_id'] = None
+            return
+            
+        elif action == 'edit_season_balance':
+            season_id = context.user_data.get('edit_season_id')
+            
+            try:
+                new_balance = int(message.strip())
+                if new_balance <= 0:
+                    await update.message.reply_text("اعتبار فصل باید عددی مثبت باشد. لطفاً دوباره تلاش کنید.")
+                    return
+                    
+                update_season(season_id, balance=new_balance)
+                
+                await update.message.reply_text(
+                    f"✅ اعتبار فصل با موفقیت به {new_balance} تغییر یافت.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data=f"edit_season^{season_id}")]])
+                )
+                
+                context.user_data['admin_action'] = None
+                context.user_data['edit_season_id'] = None
+                return
+                
+            except ValueError:
+                await update.message.reply_text("لطفاً یک عدد صحیح وارد کنید.")
+                return
+                
+        elif action == 'edit_season_desc':
+            season_id = context.user_data.get('edit_season_id')
+            new_desc = message.strip()
+            
+            if new_desc.lower() == 'بدون توضیحات':
+                new_desc = ""
+                
+            update_season(season_id, description=new_desc)
+            
+            await update.message.reply_text(
+                f"✅ توضیحات فصل با موفقیت به‌روزرسانی شد.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data=f"edit_season^{season_id}")]])
+            )
+            
+            context.user_data['admin_action'] = None
+            context.user_data['edit_season_id'] = None
+            return
+            
+        # بخش مدیریت کاربران
+        elif action == 'add_user':
+            current_step = context.user_data.get('add_user_step', 'id')
+            
+            if current_step == 'id':
+                try:
+                    user_id = int(message.strip())
+                    
+                    # بررسی وجود کاربر در دیتابیس
+                    c.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+                    if c.fetchone():
+                        await update.message.reply_text(
+                            "این کاربر قبلاً در سیستم ثبت شده است!",
+                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="admin_users^")]])
+                        )
+                        context.user_data['admin_action'] = None
+                        return
+                        
+                    context.user_data['new_user_id'] = user_id
+                    context.user_data['add_user_step'] = 'name'
+                    
+                    await update.message.reply_text(
+                        f"لطفاً نام کاربر را وارد کنید:",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="admin_users^")]])
+                    )
+                    return
+                    
+                except ValueError:
+                    await update.message.reply_text("لطفاً یک شناسه عددی معتبر وارد کنید.")
+                    return
+                    
+            elif current_step == 'name':
+                name = message.strip()
+                
+                if not name:
+                    await update.message.reply_text("نام کاربر نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.")
+                    return
+                    
+                context.user_data['new_user_name'] = name
+                context.user_data['add_user_step'] = 'username'
+                
+                await update.message.reply_text(
+                    f"لطفاً نام کاربری (username) را وارد کنید (بدون @ و در صورت نداشتن، عبارت 'ندارد' را وارد کنید):",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="admin_users^")]])
+                )
+                return
+                
+            elif current_step == 'username':
+                username = message.strip()
+                
+                if username.lower() == 'ندارد':
+                    username = None
+                elif username.startswith('@'):
+                    username = username[1:]
+                    
+                context.user_data['new_user_username'] = username
+                context.user_data['add_user_step'] = 'balance'
+                
+                await update.message.reply_text(
+                    f"لطفاً اعتبار اولیه کاربر را وارد کنید (عدد):",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="admin_users^")]])
+                )
+                return
+                
+            elif current_step == 'balance':
+                try:
+                    balance = int(message.strip())
+                    
+                    if balance < 0:
+                        await update.message.reply_text("اعتبار نمی‌تواند منفی باشد. لطفاً دوباره تلاش کنید.")
+                        return
+                        
+                    # اضافه کردن کاربر جدید
+                    user_id = context.user_data['new_user_id']
+                    name = context.user_data['new_user_name']
+                    username = context.user_data['new_user_username']
+                    
+                    c.execute("""
+                        INSERT INTO users (user_id, username, name, balance)
+                        VALUES (?, ?, ?, ?)
+                    """, (user_id, username, name, balance))
+                    conn.commit()
+                    
+                    await update.message.reply_text(
+                        f"✅ کاربر جدید با موفقیت اضافه شد:\n\n"
+                        f"آیدی: {user_id}\n"
+                        f"نام: {name}\n"
+                        f"نام کاربری: {('@' + username) if username else 'ندارد'}\n"
+                        f"اعتبار: {balance}",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="admin_users^")]])
+                    )
+                    
+                    # پاک کردن اطلاعات موقت
+                    context.user_data['admin_action'] = None
+                    context.user_data['add_user_step'] = None
+                    context.user_data.pop('new_user_id', None)
+                    context.user_data.pop('new_user_name', None)
+                    context.user_data.pop('new_user_username', None)
+                    return
+                    
+                except ValueError:
+                    await update.message.reply_text("لطفاً یک عدد صحیح وارد کنید.")
+                    return
     
     # اگر کاربر در حالت انتظار برای دلیل امتیازدهی است
     if context.user_data.get('waiting_for_reason'):
@@ -1162,6 +1858,41 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # پاک کردن وضعیت انتظار
             context.user_data['waiting_for_reason'] = False
             return
+    
+    # بررسی تأیید کاربر
+    is_approved = is_user_approved(user.id)
+    if not is_approved:
+        # ارسال پیام به کاربر
+        await update.message.reply_text(
+            f"برای اخذ دسترسی با پشتیبانی تماس بگیرید.\n\n"
+            f"آیدی پشتیبانی: {config.SUPPORT_USERNAME}",
+            reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("💎 پشتیبانی", url=f"https://t.me/{config.SUPPORT_USERNAME.strip('@')}")]
+            ])
+        )
+        return
+    
+    # پیام همگانی دلخواه
+    if context.user_data.get('admin_action') == 'custom_broadcast':
+        broadcast_text = message
+        
+        # ارسال پیام تأیید قبل از ارسال پیام همگانی
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ تأیید و ارسال", callback_data="confirm_broadcast^"),
+                InlineKeyboardButton("❌ لغو", callback_data="broadcast_menu^")
+            ]
+        ]
+        
+        context.user_data['broadcast_message'] = broadcast_text
+        
+        await update.message.reply_text(
+            f"آیا از ارسال پیام همگانی زیر به تمام کاربران اطمینان دارید؟\n\n"
+            f"---\n{broadcast_text}\n---",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+        return
     
     # اگر پیام با دستور شروع نشده باشد، منوی اصلی را فقط زمانی نمایش بده که هیچ اکشن مدیریتی فعال نباشد
     if not context.user_data.get('admin_action'):
@@ -1251,21 +1982,37 @@ def get_active_top_questions():
 
 # بررسی آیا کاربر به همه سوالات ترین‌ها پاسخ داده است
 def has_user_voted_all_top_questions(user_id):
+    # دریافت فصل فعال
+    active_season = get_active_season()
+    if not active_season:
+        # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+        season_id = config.SEASON_ID
+    else:
+        season_id = active_season[0]
+        
     c.execute("""
         SELECT COUNT(*) FROM top_questions WHERE is_active=1 AND season_id=?
-    """, (config.SEASON_ID,))
+    """, (season_id,))
     total_questions = c.fetchone()[0]
     
     c.execute("""
         SELECT COUNT(*) FROM top_votes 
         WHERE user_id=? AND season_id=?
-    """, (user_id, config.SEASON_ID))
+    """, (user_id, season_id))
     user_votes = c.fetchone()[0]
     
     return user_votes >= total_questions
 
 # دریافت سوال بعدی که کاربر هنوز به آن پاسخ نداده
 def get_next_unanswered_question(user_id):
+    # دریافت فصل فعال
+    active_season = get_active_season()
+    if not active_season:
+        # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+        season_id = config.SEASON_ID
+    else:
+        season_id = active_season[0]
+        
     c.execute("""
         SELECT q.question_id, q.text 
         FROM top_questions q 
@@ -1273,17 +2020,25 @@ def get_next_unanswered_question(user_id):
         WHERE q.is_active=1 AND q.season_id=? AND v.vote_id IS NULL
         ORDER BY q.question_id
         LIMIT 1
-    """, (user_id, config.SEASON_ID, config.SEASON_ID))
+    """, (user_id, season_id, season_id))
     return c.fetchone()
 
 # ثبت رای ترین‌ها
 def save_top_vote(user_id, question_id, voted_for_user_id):
     try:
+        # دریافت فصل فعال
+        active_season = get_active_season()
+        if not active_season:
+            # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+            season_id = config.SEASON_ID
+        else:
+            season_id = active_season[0]
+            
         c.execute("""
             INSERT OR REPLACE INTO top_votes 
             (user_id, question_id, voted_for_user_id, season_id) 
             VALUES (?, ?, ?, ?)
-        """, (user_id, question_id, voted_for_user_id, config.SEASON_ID))
+        """, (user_id, question_id, voted_for_user_id, season_id))
         conn.commit()
         return True
     except Exception as e:
@@ -1292,6 +2047,14 @@ def save_top_vote(user_id, question_id, voted_for_user_id):
 
 # دریافت نتایج ترین‌ها برای یک سوال خاص
 def get_top_results_for_question(question_id):
+    # دریافت فصل فعال
+    active_season = get_active_season()
+    if not active_season:
+        # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+        season_id = config.SEASON_ID
+    else:
+        season_id = active_season[0]
+        
     c.execute("""
         SELECT v.voted_for_user_id, COUNT(*) as vote_count, u.name
         FROM top_votes v
@@ -1300,11 +2063,19 @@ def get_top_results_for_question(question_id):
         GROUP BY v.voted_for_user_id
         ORDER BY vote_count DESC
         LIMIT 5
-    """, (question_id, config.SEASON_ID))
+    """, (question_id, season_id))
     return c.fetchall()
 
 # دریافت رای‌های کاربر در ترین‌ها
 def get_user_top_votes(user_id):
+    # دریافت فصل فعال
+    active_season = get_active_season()
+    if not active_season:
+        # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+        season_id = config.SEASON_ID
+    else:
+        season_id = active_season[0]
+        
     c.execute("""
         SELECT q.text, u.name, v.vote_id
         FROM top_votes v
@@ -1312,7 +2083,7 @@ def get_user_top_votes(user_id):
         JOIN users u ON v.voted_for_user_id = u.user_id
         WHERE v.user_id = ? AND v.season_id = ?
         ORDER BY q.question_id
-    """, (user_id, config.SEASON_ID))
+    """, (user_id, season_id))
     return c.fetchall()
 
 # مدیریت سوالات ترین‌ها (برای ادمین)
@@ -1348,6 +2119,16 @@ async def process_next_top_question(update, context):
     query = update.callback_query
     user = query.from_user
     
+    # دریافت فصل فعال
+    active_season = get_active_season()
+    if not active_season:
+        # اگر فصل فعالی وجود نداشت، از مقدار پیش‌فرض استفاده کن
+        season_id = config.SEASON_ID
+        season_name = config.SEASON_NAME
+    else:
+        season_id = active_season[0]
+        season_name = active_season[1]
+    
     # دریافت سوال بعدی که کاربر به آن پاسخ نداده
     next_question = get_next_unanswered_question(user.id)
     
@@ -1380,13 +2161,159 @@ async def process_next_top_question(update, context):
     keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
     
     await query.edit_message_text(
-        f"🏆 <b>ترین‌های فصل {config.SEASON_NAME}</b>\n\n"
+        f"🏆 <b>ترین‌های فصل {season_name}</b>\n\n"
         f"<b>سوال:</b> {question_text}\n\n"
         f"لطفاً یکی از همکاران خود را انتخاب کنید:",
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML"
     )
     return
+
+# توابع مدیریت فصل‌ها
+def get_all_seasons():
+    c.execute("""
+        SELECT id, name, balance, is_active, start_date, end_date, description
+        FROM season
+        ORDER BY id DESC
+    """)
+    return c.fetchall()
+
+def get_active_season():
+    c.execute("""
+        SELECT id, name, balance, start_date, end_date, description
+        FROM season
+        WHERE is_active=1
+        LIMIT 1
+    """)
+    return c.fetchone()
+
+def add_season(name, balance, description=""):
+    c.execute("""
+        INSERT INTO season (name, balance, description)
+        VALUES (?, ?, ?)
+    """, (name, balance, description))
+    conn.commit()
+    return c.lastrowid
+
+def update_season(season_id, name=None, balance=None, description=None):
+    update_fields = []
+    params = []
+    
+    if name is not None:
+        update_fields.append("name = ?")
+        params.append(name)
+    
+    if balance is not None:
+        update_fields.append("balance = ?")
+        params.append(balance)
+    
+    if description is not None:
+        update_fields.append("description = ?")
+        params.append(description)
+    
+    if not update_fields:
+        return False
+    
+    params.append(season_id)
+    
+    c.execute(f"""
+        UPDATE season
+        SET {", ".join(update_fields)}
+        WHERE id = ?
+    """, params)
+    conn.commit()
+    return True
+
+def activate_season(season_id):
+    # ابتدا همه فصل‌ها را غیرفعال کن
+    c.execute("UPDATE season SET is_active = 0")
+    
+    # سپس فصل مورد نظر را فعال کن
+    c.execute("""
+        UPDATE season
+        SET is_active = 1, start_date = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (season_id,))
+    
+    # به روزرسانی اعتبار کاربران
+    c.execute("SELECT balance FROM season WHERE id = ?", (season_id,))
+    season_balance = c.fetchone()[0]
+    
+    c.execute("UPDATE users SET balance = ?", (season_balance,))
+    
+    conn.commit()
+    return season_balance
+
+def end_season(season_id):
+    c.execute("""
+        UPDATE season
+        SET is_active = 0, end_date = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (season_id,))
+    conn.commit()
+
+def delete_season(season_id):
+    try:
+        c.execute("DELETE FROM season WHERE id = ? AND is_active = 0", (season_id,))
+        conn.commit()
+        return c.rowcount > 0  # اگر حداقل یک سطر حذف شده باشد True برمی‌گرداند
+    except sqlite3.Error as e:
+        logger.error(f"Error deleting season: {e}")
+        return False
+
+# دریافت آمار کاربر در یک فصل خاص
+def get_user_season_stats(user_id, season_id):
+    # امتیازهایی که کاربر دریافت کرده
+    c.execute("""
+        SELECT COUNT(*), SUM(amount)
+        FROM transactions
+        WHERE touser = ? AND season_id = ?
+    """, (user_id, season_id))
+    received = c.fetchone()
+    received_count = received[0] or 0
+    received_amount = received[1] or 0
+    
+    # امتیازهایی که کاربر داده
+    c.execute("""
+        SELECT COUNT(*), SUM(amount)
+        FROM transactions
+        WHERE user_id = ? AND season_id = ?
+    """, (user_id, season_id))
+    given = c.fetchone()
+    given_count = given[0] or 0
+    given_amount = given[1] or 0
+    
+    # تعداد دفعاتی که کاربر "ترین" بوده
+    c.execute("""
+        SELECT q.text, COUNT(*) as vote_count, GROUP_CONCAT(u.name, ', ') as voters
+        FROM top_votes v
+        JOIN top_questions q ON v.question_id = q.question_id
+        JOIN users u ON v.user_id = u.user_id
+        WHERE v.voted_for_user_id = ? AND v.season_id = ?
+        GROUP BY q.question_id
+        HAVING vote_count > 0
+    """, (user_id, season_id))
+    top_votes = c.fetchall()
+    
+    return {
+        "received_count": received_count,
+        "received_amount": received_amount,
+        "given_count": given_count,
+        "given_amount": given_amount,
+        "top_votes": top_votes
+    }
+
+# دریافت رتبه‌بندی کاربران در یک فصل خاص
+def get_season_scoreboard(season_id):
+    c.execute("""
+        SELECT touser, SUM(amount) as total, u.name 
+        FROM transactions t 
+        LEFT JOIN users u ON t.touser = u.user_id 
+        WHERE t.season_id = ?
+        GROUP BY touser 
+        ORDER BY total DESC LIMIT 10
+    """, (season_id,))
+    return c.fetchall()
 
 async def main():
     # ایجاد و پیکربندی برنامه
