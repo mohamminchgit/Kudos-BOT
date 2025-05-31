@@ -13,6 +13,8 @@ from telegram.request import HTTPXRequest
 
 # وارد کردن ماژول کارت هدیه
 import giftcard
+# وارد کردن ماژول راهنما
+import help
 
 # تنظیم لاگر با پشتیبانی از UTF-8
 if sys.platform == 'win32':
@@ -84,8 +86,8 @@ def add_user(user):
 
 def main_menu_keyboard(user_id=None):
     keyboard = [
-        [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")],
-        [InlineKeyboardButton("🎁 ارسال کارت هدیه", callback_data="giftcard_start^")] # دکمه جدید
+        [InlineKeyboardButton("🎁 ارسال کارت هدیه", callback_data="giftcard_start^"),
+        InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")]
     ]
     
     # دریافت فصل فعال
@@ -716,9 +718,21 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if data == "help^":
         await query.answer()
+        # استفاده از ماژول help برای نمایش صفحه اصلی راهنما
+        help_data = help.get_help_text("main")
         await query.edit_message_text(
-            f"📌 راهنمای استفاده از {config.BOT_NAME}\n\n[... به زودی ...]",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]])
+            help_data["text"],
+            reply_markup=InlineKeyboardMarkup(help_data["buttons"]),
+            parse_mode="HTML"
+        )
+    elif data.startswith("help_"):
+        await query.answer()
+        # استفاده از ماژول help برای نمایش بخش‌های مختلف راهنما
+        help_data = help.handle_help_callback(data)
+        await query.edit_message_text(
+            f"<b>{help_data['title']}</b>\n\n{help_data['text']}",
+            reply_markup=InlineKeyboardMarkup(help_data["buttons"]),
+            parse_mode="HTML"
         )
     elif data == "userpanel^":
         await query.answer()
@@ -1657,7 +1671,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     season_id = season[0]
                     season_name = season[1]
                     is_active = season[3]
-                    status = "🟢 فعال" if is_active == 1 else "🔴 غیرفعال"
+                    status = "🟢 فعال" if is_active == 1 else "🔴 تمام شده"
                     button_text = f"{season_name} - {status}"
                     keyboard.append([InlineKeyboardButton(button_text, callback_data=f"season_archive^{season_id}")])
                 
@@ -2112,7 +2126,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = []
         
         for q in questions:
-            status = "🟢 فعال" if q[2] == 1 else "🔴 غیرفعال"
+            status = "🟢 فعال" if q[2] == 1 else "🔴 تمام شده:"
             text += f"شناسه {q[0]}: {q[1]} - {status}\n\n"
             keyboard.append([
                 InlineKeyboardButton(f"{'غیرفعال کردن' if q[2] == 1 else 'فعال کردن'} سوال {q[0]}", 
@@ -2467,6 +2481,17 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("هیچ کاربر دیگری برای ارسال کارت هدیه وجود ندارد!", reply_markup=main_menu_keyboard(user.id))
             return
         
+        # اضافه کردن توضیحات برای بخش کارت هدیه
+        welcome_message = "🎁 ارسال کارت هدیه 💌\n\n"
+        welcome_message += "با استفاده از این بخش می‌توانید یک کارت هدیه زیبا با پیام دلخواه خود برای دوستانتان ارسال کنید.\n\n"
+        welcome_message += "✅ این سرویس کاملاً رایگان است و نیازی به اعتبار ندارد.\n"
+        welcome_message += "✅ کارت هدیه‌های شما به صورت خصوصی ارسال می‌شود و در کانال عمومی منتشر نمی‌شود.\n\n"
+        welcome_message += "✨ روش استفاده:\n"
+        welcome_message += "۱. ابتدا کاربر مورد نظر خود را از لیست زیر انتخاب کنید\n"
+        welcome_message += "۲. متن پیام خود را تایپ کنید\n"
+        welcome_message += "۳. کارت هدیه شما به صورت خودکار طراحی و ارسال می‌شود\n\n"
+        welcome_message += "👥 لطفاً کاربر مورد نظر را انتخاب کنید:"
+        
         keyboard = []
         row = []
         for i, u in enumerate(users):
@@ -2480,8 +2505,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
         await query.edit_message_text(
-            "🎁 ارسال کارت هدیه 💌\n\n"
-            "به چه کسی می‌خواهید کارت هدیه ارسال کنید؟",
+            welcome_message,
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
     elif data.startswith("giftcard_selectuser^"):
@@ -2628,7 +2652,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not gift_message:
             await update.message.reply_text(
                 "متن کارت هدیه نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 ارسال کارت هدیه", callback_data="giftcard_start^")]])
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 کارت هدیه", callback_data="giftcard_start^")]])
             )
             return
 
