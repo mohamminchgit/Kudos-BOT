@@ -5,10 +5,14 @@ import asyncio
 import config
 import sys
 import codecs
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import os # برای حذف فایل موقت کارت هدیه
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.error import NetworkError, Conflict, TimedOut, TelegramError
 from telegram.request import HTTPXRequest
+
+# وارد کردن ماژول کارت هدیه
+import giftcard
 
 # تنظیم لاگر با پشتیبانی از UTF-8
 if sys.platform == 'win32':
@@ -80,7 +84,8 @@ def add_user(user):
 
 def main_menu_keyboard(user_id=None):
     keyboard = [
-        [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")]
+        [InlineKeyboardButton("🎯 امتیازدهی به دیگران", callback_data="tovote^")],
+        [InlineKeyboardButton("🎁 ارسال کارت هدیه", callback_data="giftcard_start^")] # دکمه جدید
     ]
     
     # دریافت فصل فعال
@@ -2455,6 +2460,47 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data=f"season_archive^{season_id}")]]),
             parse_mode="HTML"
         )
+    elif data.startswith("giftcard_start^"):
+        await query.answer()
+        users = get_all_users(exclude_id=user.id)
+        if not users:
+            await query.edit_message_text("هیچ کاربر دیگری برای ارسال کارت هدیه وجود ندارد!", reply_markup=main_menu_keyboard(user.id))
+            return
+        
+        keyboard = []
+        row = []
+        for i, u in enumerate(users):
+            row.append(InlineKeyboardButton(f"{i+1}- {u[1]}", callback_data=f"giftcard_selectuser^{u[0]}"))
+            if len(row) == 2 or i == len(users) - 1:
+                if len(row) == 1 and i == len(users) - 1:
+                    keyboard.append(row)
+                elif len(row) == 2:
+                    keyboard.append(row)
+                row = []
+        
+        keyboard.append([InlineKeyboardButton("» بازگشت", callback_data="userpanel^")])
+        await query.edit_message_text(
+            "🎁 ارسال کارت هدیه 💌\n\n"
+            "به چه کسی می‌خواهید کارت هدیه ارسال کنید؟",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data.startswith("giftcard_selectuser^"):
+        await query.answer()
+        receiver_id = int(data.split("^")[1])
+        
+        c.execute("SELECT name FROM users WHERE user_id=?", (receiver_id,))
+        result = c.fetchone()
+        receiver_name = result[0] if result else "کاربر"
+        
+        context.user_data['gift_card_receiver_id'] = receiver_id
+        context.user_data['gift_card_receiver_name'] = receiver_name
+        context.user_data['waiting_for_gift_card_message'] = True
+        
+        await query.edit_message_text(
+            f"شما در حال ارسال کارت هدیه به {receiver_name} هستید.\n\n"
+            f"لطفاً متن دلخواه خود را برای کارت هدیه بنویسید و ارسال کنید:",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="giftcard_start^")]])
+        )
     else:
         await query.answer("در حال توسعه ...")
 
@@ -2528,7 +2574,7 @@ async def process_next_top_question(update: Update, context: ContextTypes.DEFAUL
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """پردازش پیام‌های متنی دریافتی از کاربران"""
     user = update.effective_user
-    message = update.message.text
+    message_text = update.message.text # تغییر نام متغیر برای جلوگیری از تداخل
     
     # بررسی آیا کاربر منتظر دریافت دلیل امتیازدهی است
     if context.user_data.get('waiting_for_reason'):
@@ -2548,18 +2594,80 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # تنظیم دکمه تأیید
         keyboard = [
-            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{touser_id}^{amount}^{message}")],
+            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{touser_id}^{amount}^{message_text}")],
             [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
         ]
         
         await update.message.reply_text(
             f"در حال ارسال {amount} امتیاز به {touser_name}\n\n"
-            f"📝 دلیل: {message}\n\n"
+            f"📝 دلیل: {message_text}\n\n"
             f"آیا تأیید می‌کنید؟",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
-    
+    elif context.user_data.get('waiting_for_gift_card_message'):
+        receiver_id = context.user_data.get('gift_card_receiver_id')
+        receiver_name = context.user_data.get('gift_card_receiver_name', 'کاربر')
+        sender_id = user.id
+        
+        # دریافت نام فرستنده از دیتابیس
+        c.execute("SELECT name FROM users WHERE user_id=?", (sender_id,))
+        sender_result = c.fetchone()
+        sender_name = sender_result[0] if sender_result else "یک دوست"
+
+        # پاک کردن وضعیت انتظار
+        context.user_data.pop('waiting_for_gift_card_message', None)
+        context.user_data.pop('gift_card_receiver_id', None)
+        context.user_data.pop('gift_card_receiver_name', None)
+
+        if not receiver_id:
+            await update.message.reply_text("خطا در پردازش کارت هدیه. لطفاً دوباره تلاش کنید.")
+            return
+
+        gift_message = message_text.strip()
+        if not gift_message:
+            await update.message.reply_text(
+                "متن کارت هدیه نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 ارسال کارت هدیه", callback_data="giftcard_start^")]])
+            )
+            return
+
+        # ایجاد تصویر کارت هدیه
+        image_path = giftcard.create_gift_card_image(sender_name, receiver_name, gift_message)
+
+        if image_path:
+            caption = f"🎁 یک کارت هدیه از طرف {sender_name} برای شما! 💌\n\nمتن پیام:\n{gift_message}"
+            god_admin_caption = f"🎁 کارت هدیه ارسالی:\n\nاز: {sender_name} (ID: {sender_id})\nبه: {receiver_name} (ID: {receiver_id})\n\nمتن پیام:\n{gift_message}"
+            
+            try:
+                # ارسال به گیرنده
+                with open(image_path, 'rb') as photo_file:
+                    await context.bot.send_photo(chat_id=receiver_id, photo=InputFile(photo_file), caption=caption)
+                
+                # ارسال به ادمین گاد
+                if hasattr(config, 'GOD_ADMIN_ID') and config.GOD_ADMIN_ID:
+                    with open(image_path, 'rb') as photo_file_admin: # دوباره باز کردن فایل
+                        await context.bot.send_photo(chat_id=config.GOD_ADMIN_ID, photo=InputFile(photo_file_admin), caption=god_admin_caption)
+                else:
+                    logger.warning("GOD_ADMIN_ID در config.py تعریف نشده یا خالی است. کارت هدیه به ادمین ارسال نشد.")
+
+                await update.message.reply_text(
+                    f"کارت هدیه شما با موفقیت برای {receiver_name} ارسال شد! ✅",
+                    reply_markup=main_menu_keyboard(user.id)
+                )
+            except Exception as e:
+                logger.error(f"خطا در ارسال کارت هدیه: {e}")
+                await update.message.reply_text("متاسفانه در ارسال کارت هدیه خطایی رخ داد.")
+            finally:
+                # حذف فایل موقت تصویر
+                if os.path.exists(image_path):
+                    try:
+                        os.remove(image_path)
+                    except Exception as e_remove:
+                        logger.error(f"خطا در حذف فایل موقت کارت هدیه {image_path}: {e_remove}")
+        else:
+            await update.message.reply_text("متاسفانه در ایجاد تصویر کارت هدیه خطایی رخ داد. لطفاً مطمئن شوید فایل قالب و فونت به درستی در سرور موجود است.")
+        return
     # بررسی آیا ادمین در حال وارد کردن نام کاربر برای تایید است
     if context.user_data.get('waiting_for_name'):
         # دریافت اطلاعات کاربر در حال تایید
@@ -2576,7 +2684,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("خطا در پردازش درخواست. لطفاً دوباره تلاش کنید.")
             return
         
-        real_name = message.strip()
+        real_name = message_text.strip()
         if not real_name:
             await update.message.reply_text(
                 "نام وارد شده معتبر نیست. لطفاً دوباره تلاش کنید.",
@@ -2635,7 +2743,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         c.execute("""
             INSERT INTO top_questions (text, is_active, season_id)
             VALUES (?, 1, ?)
-        """, (message, active_season[0]))
+        """, (message_text, active_season[0]))
         conn.commit()
         
         await update.message.reply_text(
@@ -2649,16 +2757,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         season_step = context.user_data.get('season_step')
         
         if season_step == 'name':
-            context.user_data['season_name'] = message
+            context.user_data['season_name'] = message_text
             context.user_data['season_step'] = 'balance'
             await update.message.reply_text(
-                f"لطفاً اعتبار اولیه برای فصل «{message}» را وارد کنید (مثلاً: 10):",
+                f"لطفاً اعتبار اولیه برای فصل «{message_text}» را وارد کنید (مثلاً: 10):",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
             )
             return
         elif season_step == 'balance':
             try:
-                balance = int(message)
+                balance = int(message_text)
                 if balance <= 0:
                     await update.message.reply_text(
                         "اعتبار باید یک عدد مثبت باشد. لطفاً دوباره وارد کنید:",
@@ -2681,7 +2789,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
         elif season_step == 'description':
-            context.user_data['season_description'] = message
+            context.user_data['season_description'] = message_text
             # آماده‌سازی برای دریافت سوالات ترین‌ها
             context.user_data['season_step'] = 'question_1'
             context.user_data['season_questions'] = []
@@ -2694,14 +2802,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         elif season_step == 'question_1':
-            if not message.strip():
+            if not message_text.strip():
                 await update.message.reply_text(
                     "متن سوال نمی‌تواند خالی باشد. لطفاً دوباره وارد کنید:",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
                 )
                 return
             
-            context.user_data['season_questions'].append(message)
+            context.user_data['season_questions'].append(message_text)
             context.user_data['season_step'] = 'question_2'
             
             await update.message.reply_text(
@@ -2710,14 +2818,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         elif season_step == 'question_2':
-            if not message.strip():
+            if not message_text.strip():
                 await update.message.reply_text(
                     "متن سوال نمی‌تواند خالی باشد. لطفاً دوباره وارد کنید:",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
                 )
                 return
             
-            context.user_data['season_questions'].append(message)
+            context.user_data['season_questions'].append(message_text)
             context.user_data['season_step'] = 'question_3'
             
             await update.message.reply_text(
@@ -2726,14 +2834,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         elif season_step == 'question_3':
-            if not message.strip():
+            if not message_text.strip():
                 await update.message.reply_text(
                     "متن سوال نمی‌تواند خالی باشد. لطفاً دوباره وارد کنید:",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
                 )
                 return
             
-            context.user_data['season_questions'].append(message)
+            context.user_data['season_questions'].append(message_text)
             context.user_data['season_step'] = 'question_4'
             
             await update.message.reply_text(
@@ -2742,14 +2850,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         elif season_step == 'question_4':
-            if not message.strip():
+            if not message_text.strip():
                 await update.message.reply_text(
                     "متن سوال نمی‌تواند خالی باشد. لطفاً دوباره وارد کنید:",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
                 )
                 return
             
-            context.user_data['season_questions'].append(message)
+            context.user_data['season_questions'].append(message_text)
             context.user_data['season_step'] = 'question_5'
             
             await update.message.reply_text(
@@ -2758,14 +2866,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         elif season_step == 'question_5':
-            if not message.strip():
+            if not message_text.strip():
                 await update.message.reply_text(
                     "متن سوال نمی‌تواند خالی باشد. لطفاً دوباره وارد کنید:",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="manage_seasons^")]])
                 )
                 return
             
-            context.user_data['season_questions'].append(message)
+            context.user_data['season_questions'].append(message_text)
             
             # اطلاعات فصل و سوالات آماده ثبت است
             season_name = context.user_data.get('season_name')
@@ -2809,7 +2917,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # پاک کردن وضعیت انتظار
         context.user_data.pop('admin_action', None)
         
-        if not message.strip():
+        if not message_text.strip():
             await update.message.reply_text(
                 "متن پیام نمی‌تواند خالی باشد. لطفاً دوباره تلاش کنید.",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="broadcast_menu^")]])
@@ -2849,7 +2957,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await bot.send_message(
                     chat_id=user_row[0],
-                    text=message,
+                    text=message_text,
                     parse_mode="HTML",
                     reply_markup=keyboard
                 )
