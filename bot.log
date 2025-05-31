@@ -1,0 +1,188 @@
+2025-05-31 12:58:20,827 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-05-31 12:59:03,431 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-05-31 12:59:03,992 - __main__ - INFO - ربات در حال کار است
+2025-05-31 12:59:04,441 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 12:59:04,612 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 12:59:04,612 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: no such column: created_at
+2025-05-31 12:59:04,613 - __main__ - ERROR - اطلاعات خطا: OperationalError: no such column: created_at
+2025-05-31 12:59:04,873 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 12:59:05,011 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 12:59:05,011 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: no such column: created_at
+2025-05-31 12:59:05,011 - __main__ - ERROR - اطلاعات خطا: OperationalError: no such column: created_at
+2025-05-31 12:59:07,842 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 12:59:08,013 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 12:59:08,014 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: no such column: created_at
+2025-05-31 12:59:08,014 - __main__ - ERROR - اطلاعات خطا: OperationalError: no such column: created_at
+2025-05-31 12:59:10,008 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 12:59:10,178 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 12:59:10,179 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: no such column: created_at
+2025-05-31 12:59:10,179 - __main__ - ERROR - اطلاعات خطا: OperationalError: no such column: created_at
+2025-05-31 14:23:34,481 - __main__ - WARNING - خطا در درخواست keep-alive: httpx.ConnectError: [Errno 11001] getaddrinfo failed
+2025-05-31 14:24:27,349 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-05-31 14:24:28,034 - __main__ - INFO - ربات در حال کار است
+2025-05-31 14:24:33,983 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:24:34,373 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:24:36,475 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:24:36,603 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:24:39,003 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:24:39,167 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:24:41,507 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:24:41,683 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:24:46,627 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:24:46,832 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:24:59,789 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:25:00,191 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:25:01,916 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:25:02,094 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:25:04,045 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:25:04,222 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:25:06,192 - __main__ - INFO - Checking membership for user 1983438871 in channel -1002679873778
+2025-05-31 14:25:06,334 - __main__ - INFO - User 1983438871 membership status: member
+2025-05-31 14:25:15,647 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:16,065 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:17,785 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:17,954 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:19,943 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:20,112 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:31,188 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:31,576 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:33,326 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:33,499 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:35,463 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:35,640 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:43,806 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:44,238 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:53,590 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:53,976 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:25:55,725 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:25:55,897 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:00,322 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:00,496 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:03,564 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:03,745 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:05,698 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:05,873 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:07,837 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:08,011 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:09,978 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:10,150 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:12,111 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:12,288 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:12,289 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: tuple index out of range
+2025-05-31 14:26:12,290 - __main__ - ERROR - اطلاعات خطا: IndexError: tuple index out of range
+2025-05-31 14:26:14,244 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:14,384 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:16,695 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:16,867 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:18,835 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:19,015 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:20,978 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:21,168 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:23,118 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:23,292 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:23,293 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: tuple index out of range
+2025-05-31 14:26:23,294 - __main__ - ERROR - اطلاعات خطا: IndexError: tuple index out of range
+2025-05-31 14:26:25,258 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:25,431 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:27,399 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:27,571 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:30,299 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:30,435 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:32,436 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:32,577 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:34,575 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:34,750 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:36,714 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:36,887 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:40,321 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:40,490 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:42,454 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:42,629 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:44,583 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:44,759 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:46,918 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:47,091 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:49,050 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:49,225 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:26:51,188 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:26:51,365 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:22,089 - __main__ - INFO - در حال بستن ربات...
+2025-05-31 14:28:25,007 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-05-31 14:28:25,572 - __main__ - INFO - ربات در حال کار است
+2025-05-31 14:28:25,987 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:26,163 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:28,119 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:28,295 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:30,249 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:30,407 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:36,607 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:37,044 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:40,010 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:40,187 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:42,938 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:43,120 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:45,074 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:45,249 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:47,211 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:47,384 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:49,347 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:49,528 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:53,183 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:53,366 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:55,314 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:55,458 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:28:57,460 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:28:57,637 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:29:44,398 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:29:44,930 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:29:46,761 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:29:46,927 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:01,206 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:01,599 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:03,346 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:03,490 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:11,702 - __main__ - INFO - در حال بستن ربات...
+2025-05-31 14:30:14,645 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-05-31 14:30:15,259 - __main__ - INFO - ربات در حال کار است
+2025-05-31 14:30:16,161 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:16,323 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:18,297 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:18,470 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:20,433 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:20,563 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:40,745 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:40,918 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:45,934 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:46,110 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:48,073 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:48,246 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:30:53,649 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:30:53,797 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:31:03,198 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:31:03,578 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:08,639 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:09,557 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:11,092 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:11,269 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:13,224 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:13,354 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:15,604 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:15,758 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:24,301 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:24,487 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:36,453 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:36,842 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:38,594 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:38,768 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:41,751 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:41,914 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:43,882 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:44,057 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:46,007 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:46,186 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:32:48,138 - __main__ - INFO - Checking membership for user 882730020 in channel -1002679873778
+2025-05-31 14:32:48,311 - __main__ - INFO - User 882730020 membership status: member
+2025-05-31 14:33:02,188 - __main__ - INFO - در حال بستن ربات...
+2025-05-31 14:33:05,319 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-05-31 14:33:05,867 - __main__ - INFO - ربات در حال کار است
+2025-05-31 14:33:09,516 - __main__ - INFO - در حال بستن ربات...
