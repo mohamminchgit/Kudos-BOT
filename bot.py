@@ -738,7 +738,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("تابلوی امتیازات 🏆", callback_data="Scoreboard^")],
             [InlineKeyboardButton("امتیازهای شما 🎯", callback_data="receivedpoints^"), 
              InlineKeyboardButton("امتیازهایی که دادید 💬", callback_data="givenpoints^")],
-            [InlineKeyboardButton("🗂 آرشیو فصل‌ها", callback_data="season_archive^")],
+            [InlineKeyboardButton("🗂 آرشیو فصل‌ها", callback_data="season_archive")],
             [InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]
         ]
         await query.edit_message_text(
@@ -1622,7 +1622,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
-    elif data.startswith("season_archive^"):
+    elif data.startswith("season_archive"):
         parts = data.split("^")
         print(f"season_archive callback called with data: {data}, parts: {parts}")
         
@@ -1725,7 +1725,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # به جای فراخوانی مستقیم menu_callback، به منوی آرشیو فصل‌ها برمی‌گردیم
                 await query.edit_message_text(
                     "🗂 <b>آرشیو فصل‌ها</b>",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="season_archive^")]]),
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="season_archive")]]),
                     parse_mode="HTML"
                 )
                 return
@@ -1784,7 +1784,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("👁 امتیازهای دریافتی", callback_data=f"receivedpoints^0^{season_id}")],
                 [InlineKeyboardButton("👁 امتیازهای داده شده", callback_data=f"givenpoints^0^{season_id}")],
                 [InlineKeyboardButton("🏆 نتایج ترین‌های فصل", callback_data=f"season_top_results^{season_id}")],
-                [InlineKeyboardButton("» بازگشت", callback_data="season_archive^")]
+                [InlineKeyboardButton("» بازگشت", callback_data="season_archive")]
             ]
             
             await query.edit_message_text(
@@ -2399,7 +2399,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer("فصل مورد نظر یافت نشد!")
             await query.edit_message_text(
                 "فصل مورد نظر یافت نشد!",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="season_archive^")]])
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="season_archive")]])
             )
             return
             
