@@ -134,6 +134,31 @@ CREATE TABLE IF NOT EXISTS master_top_questions (
 );
 ''')
 
+# جدول عضویت کاربران در فصل‌ها
+c.execute('''
+CREATE TABLE IF NOT EXISTS user_season (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL,
+    join_date INTEGER,
+    balance INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1
+)
+''')
+
+# --- اطمینان از وجود همه ستون‌های مهم در جدول users ---
+try:
+    add_column_if_not_exists("users", "telegram_name", "TEXT")
+    add_column_if_not_exists("users", "is_approved", "INTEGER DEFAULT 0")
+    add_column_if_not_exists("users", "birthday", "TEXT")
+    add_column_if_not_exists("users", "created_at", "TEXT DEFAULT CURRENT_TIMESTAMP")
+    # اگر ستونی مثل 'balance' یا 'username' یا 'name' حذف شده بود، دوباره اضافه شود
+    add_column_if_not_exists("users", "balance", "INTEGER DEFAULT 0")
+    add_column_if_not_exists("users", "username", "TEXT")
+    add_column_if_not_exists("users", "name", "TEXT")
+except Exception as e:
+    print(f"Error checking/adding columns to users: {e}")
+
 # بررسی و اضافه کردن ستون‌های مورد نیاز
 try:
     # بررسی و اضافه کردن ستون vote_time در جدول top_votes اگر وجود ندارد
@@ -172,6 +197,79 @@ try:
 except Exception as e:
     print(f"Error checking/adding admin user: {e}")
 
+# ایجاد جدول نیازمند تأیید
+c.execute('''
+CREATE TABLE IF NOT EXISTS pending_approval (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE,
+    first_name TEXT,
+    last_name TEXT,
+    username TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
+# ایجاد جدول پروفایل‌های هوش مصنوعی کاربران
+c.execute('''
+CREATE TABLE IF NOT EXISTS ai_user_profiles (
+    profile_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE,
+    skills TEXT,
+    strengths TEXT,
+    personality TEXT,
+    improvement_areas TEXT,
+    team_perception TEXT,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+)
+''')
+
+# اضافه کردن جدول‌های مورد نیاز برای ماژول هوش مصنوعی
+c.execute('''
+CREATE TABLE IF NOT EXISTS ai_user_perspectives (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    season_id INTEGER,
+    perspective_text TEXT,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
+# اضافه کردن ستون telegram_name به جدول users اگر وجود ندارد
+try:
+    add_column_if_not_exists("users", "telegram_name", "TEXT")
+except Exception as e:
+    print(f"Error adding telegram_name column: {e}")
+
+# اضافه کردن ستون is_approved به جدول users اگر وجود ندارد
+try:
+    add_column_if_not_exists("users", "is_approved", "INTEGER DEFAULT 0")
+except Exception as e:
+    print(f"Error adding is_approved column: {e}")
+
+def add_missing_columns():
+    """اضافه کردن ستون‌های گم شده به دیتابیس"""
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        
+        # بررسی و اضافه کردن ستون total_received به جدول users
+        c.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in c.fetchall()]
+        
+        if 'total_received' not in columns:
+            c.execute("ALTER TABLE users ADD COLUMN total_received INTEGER DEFAULT 0")
+            
+        conn.commit()
+        print("ستون‌های گمشده با موفقیت اضافه شدند.")
+    except Exception as e:
+        print(f"خطا در اضافه کردن ستون‌های گمشده: {e}")
+    finally:
+        conn.close()
+
+# اجرای تابع در هنگام راه‌اندازی
+add_missing_columns()
+
 conn.commit()
 conn.close()
-print("Database and tables checked/created. All necessary columns have been added.") 
+print("Database and tables checked/created. All necessary columns have been added.")
