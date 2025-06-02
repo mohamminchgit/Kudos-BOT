@@ -4363,3 +4363,7 @@
 2025-06-02 17:59:22,662 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: 'CallbackQuery' object has no attribute 'bot'
 2025-06-02 17:59:22,663 - __main__ - ERROR - اطلاعات خطا: AttributeError: 'CallbackQuery' object has no attribute 'bot'
 2025-06-02 18:06:42,474 - __main__ - INFO - در حال بستن ربات...
+2025-06-02 18:07:05,209 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-02 18:07:05,813 - __main__ - INFO - ربات در حال کار است
+2025-06-02 18:08:06,617 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: 'CallbackQuery' object has no attribute 'bot'
+2025-06-02 18:08:06,620 - __main__ - ERROR - اطلاعات خطا: AttributeError: 'CallbackQuery' object has no attribute 'bot'
