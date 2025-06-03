@@ -13,6 +13,7 @@ import config
 
 from ..database.user_functions import get_user_profile, get_user_transactions, count_user_transactions, get_scoreboard
 from ..database.season_functions import get_active_season, get_all_seasons
+from ..database.db_utils import get_db_connection
 from ..utils.ui_helpers_new import main_menu_keyboard
 from ..utils.season_utils import get_season_scoreboard, get_user_season_stats
 
@@ -44,9 +45,25 @@ async def _handle_user_profile(query, user_id):
     await query.answer()
     profile = get_user_profile(user_id)
     if profile:
-        total_received = profile[5] or 0
+        # profile = [name, user_id, season_id, balance, total_received]
+        name = profile[0]
+        balance = profile[3]
+        total_received = profile[4] or 0
+        
+        # دریافت یوزرنیم از جدول users
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT username FROM users WHERE user_id = ?", (user_id,))
+            username_result = cursor.fetchone()
+            username = username_result[0] if username_result and username_result[0] else "ندارد"
+            conn.close()
+        except Exception as e:
+            logger.error(f"خطا در دریافت یوزرنیم: {e}")
+            username = "ندارد"
+        
         await query.edit_message_text(
-            f"👤 پروفایل شما\n\nنام: {profile[2]}\nیوزرنیم: @{profile[1] or 'ندارد'}\nاعتبار فعلی: {profile[3]}\nمجموع امتیازات دریافتی: {total_received}",
+            f"👤 پروفایل شما\n\nنام: {name}\nیوزرنیم: @{username}\nاعتبار فعلی: {balance}\nمجموع امتیازات دریافتی: {total_received}",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🧠 پروفایل هوشمند", callback_data="ai_profile^")],
                 [InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]

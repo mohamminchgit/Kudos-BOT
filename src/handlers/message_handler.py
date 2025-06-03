@@ -4,6 +4,7 @@
 import logging
 import sys
 import os
+import time
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
@@ -19,7 +20,7 @@ from ..database.db_utils import get_db_connection
 from ..services.giftcard import create_gift_card_image
 from ..services import ai
 
-from .ai_callbacks import _save_top_vote, _process_next_top_question
+from .top_vote_handlers import _save_top_vote, _process_next_top_question
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """پردازش پیام‌های متنی ورودی"""
@@ -32,6 +33,100 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # بررسی پیام‌های خاص
     if not context.user_data:
         context.user_data = {}
+    
+    # بررسی پیام‌های مربوط به کالبک‌های اینلاین
+    if text and text.startswith("voteuser^"):
+        # پردازش انتخاب کاربر برای امتیازدهی
+        logger.debug(f"تشخیص پیام انتخاب کاربر برای امتیازدهی: {text}")
+        # استفاده از تابع موجود برای پردازش
+        await handle_vote_user_selection(update, context, text)
+        return
+    
+    if text and text.startswith("top_select^"):
+        # پردازش انتخاب کاربر برای رای‌دهی ترین‌ها
+        logger.debug(f"تشخیص پیام انتخاب کاربر برای رای‌دهی ترین‌ها: {text}")
+        parts = text.split("^")
+        if len(parts) == 3:
+            question_id = int(parts[1])
+            voted_for = int(parts[2])
+            
+            # تنظیم حالت رأی‌گیری ترین‌ها در داده‌های کاربر
+            context.user_data['top_vote_mode'] = True
+            context.user_data['current_question_id'] = question_id
+            
+            # نمایش پیام در حال پردازش
+            processing_msg = await update.effective_chat.send_message(
+                "در حال ثبت رأی شما...",
+                reply_markup=None
+            )
+            
+            # پاک کردن پیام اصلی
+            try:
+                await update.message.delete()
+            except Exception as e:
+                logger.error(f"خطا در حذف پیام: {e}")
+            
+            # ذخیره رأی کاربر
+            if await _save_top_vote(user.id, question_id, voted_for):
+                # ادامه به سوال بعدی
+                await _process_next_top_question(processing_msg, user.id, context)
+            else:
+                await processing_msg.edit_text(
+                    "❌ خطا در ثبت رأی شما. ممکن است قبلاً به این سوال رأی داده باشید.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]])
+                )
+        return
+        
+    if text and text.startswith("giftcard_selectuser^"):
+        # پردازش انتخاب کاربر برای ارسال تشکرنامه
+        logger.debug(f"تشخیص پیام انتخاب کاربر برای ارسال تشکرنامه: {text}")
+        # استخراج شناسه کاربر
+        parts = text.split("^")
+        if len(parts) == 2:
+            user_id = int(parts[1])
+            
+            # به جای ایجاد CallbackQuery ساختگی، از روش دیگری استفاده می‌کنیم
+            await update.effective_chat.send_message(
+                "در حال پردازش...",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("منوی اصلی", callback_data="userpanel^")
+                ]])
+            )
+            
+            # استفاده از روش مستقیم برای پردازش انتخاب کاربر
+            context.user_data['gift_card_mode'] = True
+            context.user_data['gift_card_receiver_id'] = user_id
+            
+            # دریافت نام گیرنده از دیتابیس
+            from ..database.models import db_manager
+            target_user = db_manager.execute_query(
+                "SELECT name FROM users WHERE user_id=?", 
+                (user_id,), 
+                fetchone=True
+            )
+            receiver_name = target_user[0] if target_user else "کاربر"
+            context.user_data['gift_card_receiver_name'] = receiver_name
+            context.user_data['waiting_for_gift_card_message'] = True
+            
+            # حذف پیام فعلی
+            try:
+                await update.message.delete()
+            except Exception as e:
+                logger.error(f"خطا در حذف پیام: {e}")
+            
+            # ارسال پیام جدید
+            await update.effective_chat.send_message(
+                f"شما در حال ارسال تشکر‌نامه به {receiver_name} هستید.\n\n"
+                "لطفاً متن پیام تشکر‌نامه را وارد کنید:",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="letter_start^")]])
+            )
+        return
+    
+    if text and text.startswith("کاربر انتخاب شده:"):
+        # پردازش پیام انتخاب کاربر از جستجوی اینلاین
+        logger.debug(f"تشخیص پیام انتخاب کاربر از جستجوی اینلاین: {text}")
+        await handle_inline_user_selection(update, context, text)
+        return
     
     # بررسی وضعیت کاربر - اگر در انتظار دلیل امتیازدهی است
     if context.user_data.get('waiting_for_reason'):
@@ -75,12 +170,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             ]
         ]
         
-        # ارسال پیام تایید
+        # ارسال پیام تایید - استفاده از ویرایش پیام قبلی به جای ارسال پیام جدید
         try:
-            if 'voting_menu' in context.user_data and 'message_id' in context.user_data['voting_menu']:
-                # ویرایش پیام قبلی اگر وجود داشته باشد
+            # اطلاعات پیام قبلی ذخیره شده
+            voting_message = context.user_data.get('voting_message')
+            
+            if voting_message and 'chat_id' in voting_message and 'message_id' in voting_message:
+                # ویرایش پیام قبلی
                 await context.bot.edit_message_text(
-                    chat_id=message.chat_id,
+                    chat_id=voting_message['chat_id'],
+                    message_id=voting_message['message_id'],
+                    text=f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+                         f"💬 دلیل: {reason}\n\n"
+                         f"آیا تایید می‌کنید؟",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+            elif 'voting_menu' in context.user_data and 'message_id' in context.user_data['voting_menu']:
+                # ویرایش منوی امتیازدهی اگر وجود داشته باشد
+                await context.bot.edit_message_text(
+                    chat_id=context.user_data['voting_menu']['chat_id'],
                     message_id=context.user_data['voting_menu']['message_id'],
                     text=f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
                          f"💬 دلیل: {reason}\n\n"
@@ -88,7 +196,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             else:
-                # ارسال پیام جدید
+                # اگر هیچ پیام قبلی یافت نشد، پیام جدید ارسال می‌کنیم
                 await message.reply_text(
                     f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
                     f"💬 دلیل: {reason}\n\n"
@@ -104,6 +212,63 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
         # پاک کردن وضعیت انتظار
         context.user_data.pop('waiting_for_reason', None)
+        context.user_data.pop('voting_message', None)  # پاک کردن اطلاعات پیام قبلی
+        return
+
+    # بررسی وضعیت کاربر - اگر در انتظار نام واقعی کاربر برای تایید است
+    elif context.user_data.get('waiting_for_name'):
+        logger.debug(f"ادمین {user.id} نام واقعی کاربر را ارسال کرد")
+        
+        # ارجاع به هندلر تایید کاربر توسط ادمین
+        await handle_admin_user_approval(update, context, text)
+        return
+
+    # بررسی وضعیت کاربر - اگر در انتظار پیام همگانی است
+    elif context.user_data.get('waiting_for_broadcast'):
+        from ..handlers.admin_handlers import is_admin, handle_broadcast_message
+        
+        # بررسی دسترسی ادمین
+        if not is_admin(user.id):
+            await message.reply_text("شما دسترسی ادمین ندارید.")
+            return
+        
+        logger.debug(f"ادمین {user.id} پیام همگانی را ارسال کرد")
+        
+        # پاک کردن وضعیت انتظار
+        context.user_data.pop('waiting_for_broadcast', None)
+        
+        # حذف پیام ادمین
+        try:
+            await message.delete()
+        except Exception as e:
+            logger.error(f"خطا در حذف پیام ادمین: {e}")
+        
+        # ارسال پیام "در حال ارسال..."
+        status_msg = await update.effective_chat.send_message(
+            "📤 در حال ارسال پیام همگانی...",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data="admin_panel^")]])
+        )
+        
+        # ارسال پیام همگانی
+        success_count, fail_count = await handle_broadcast_message(context, text, user.id)
+        
+        # ویرایش پیام وضعیت
+        await status_msg.edit_text(
+            f"✅ <b>پیام همگانی ارسال شد</b>\n\n"
+            f"موفق: {success_count} کاربر\n"
+            f"ناموفق: {fail_count} کاربر\n\n"
+            f"📝 متن پیام:\n{text}",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data="admin_panel^")]])
+        )
+        return
+
+    # بررسی وضعیت کاربر - اگر در انتظار پیام AI است
+    elif context.user_data.get('waiting_for_ai_prompt'):
+        logger.debug(f"کاربر {user.id} پیام AI را ارسال کرد")
+        
+        # ارجاع به هندلر AI chat
+        await handle_ai_chat_message(update, context, text)
         return
 
     # بررسی وضعیت کاربر - اگر در انتظار پیام تشکرنامه است
@@ -321,7 +486,6 @@ async def handle_inline_user_selection(update: Update, context: ContextTypes.DEF
             return
         
         # پردازش رأی ترین‌ها
-        from .top_vote_handlers import _save_top_vote, _process_next_top_question
         
         # نمایش پیام موفقیت با آلرت
         msg = await update.effective_chat.send_message(
@@ -406,11 +570,36 @@ async def handle_inline_user_selection(update: Update, context: ContextTypes.DEF
             f"لطفا مقدار امتیازی که میخواهید بدهید را انتخاب کنید:"
         )
         
-        # ارسال پیام جدید
-        await update.effective_chat.send_message(
+        # اگر این پیام از جستجوی اینلاین می‌آید، می‌توانیم پیام اصلی را ویرایش کنیم
+        if hasattr(update, 'message') and update.message:
+            # ذخیره اطلاعات پیام برای استفاده بعدی
+            context.user_data['voting_message'] = {
+                'chat_id': update.message.chat_id,
+                'message_id': update.message.message_id
+            }
+            
+            try:
+                # ویرایش پیام فعلی به جای ارسال پیام جدید
+                await update.message.edit_text(
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+            except Exception as e:
+                logger.error(f"خطا در ویرایش پیام: {e}")
+                # در صورت خطا، ادامه به ارسال پیام جدید
+        
+        # اگر امکان ویرایش نبود یا خطایی رخ داد، پیام جدید ارسال می‌کنیم
+        new_message = await update.effective_chat.send_message(
             message_text,
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
+        
+        # ذخیره اطلاعات پیام جدید برای استفاده بعدی
+        context.user_data['voting_message'] = {
+            'chat_id': new_message.chat_id,
+            'message_id': new_message.message_id
+        }
 
 async def handle_ai_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
     """پردازش پیام‌های چت با هوش مصنوعی"""
@@ -497,38 +686,42 @@ async def handle_admin_user_approval(update: Update, context: ContextTypes.DEFAU
         conn = get_db_connection()
         c = conn.cursor()
         
-        # بررسی وجود فصل فعال
-        c.execute("SELECT id FROM season WHERE is_active=1")
+        # بررسی وجود فصل فعال و دریافت امتیاز پیش‌فرض
+        c.execute("SELECT id, balance FROM season WHERE is_active=1")
         active_season = c.fetchone()
         if not active_season:
             await update.message.reply_text("خطا: هیچ فصل فعالی یافت نشد!")
             return
             
         season_id = active_season[0]
+        season_balance = active_season[1]  # امتیاز پیش‌فرض فصل (مثلاً 100 امتیاز)
         
-        # ثبت کاربر در دیتابیس
+        # ثبت کاربر در دیتابیس با امتیاز پیش‌فرض فصل
+        # کاربر جدید همان امتیازی را دریافت می‌کند که برای فصل فعال تعریف شده
         c.execute("""
             INSERT INTO users (user_id, username, telegram_name, name, join_date, is_approved, balance)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, username or '', telegram_name, real_name, int(time.time()), 1, 0))
+        """, (user_id, username or '', telegram_name, real_name, int(time.time()), 1, season_balance))
         
-        # افزودن کاربر به فصل فعلی
+        # افزودن کاربر به فصل فعلی با همان امتیاز پیش‌فرض
         c.execute("""
             INSERT INTO user_season (user_id, season_id, join_date, balance)
             VALUES (?, ?, ?, ?)
-        """, (user_id, season_id, int(time.time()), 0))
+        """, (user_id, season_id, int(time.time()), season_balance))
         
         conn.commit()
         
-        # ارسال پیام موفقیت به ادمین
+        # ارسال پیام موفقیت به ادمین با اطلاعات کامل
         await update.message.reply_text(
-            f"✅ کاربر {real_name} با موفقیت به سیستم اضافه شد.",
+            f"✅ کاربر {real_name} با موفقیت به سیستم اضافه شد.\n"
+            f"💰 امتیاز دریافتی: {season_balance} امتیاز (امتیاز پیش‌فرض فصل)",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت به پنل ادمین", callback_data="admin_panel^")]])
         )
         
         # ارسال پیام خوش‌آمدگویی به کاربر
         welcome_text = f"کاربر گرامی {real_name}، به {config.BOT_NAME} خوش آمدید! ✅"
-        welcome_text += "\nدرخواست دسترسی شما تایید شد."
+        welcome_text += f"\nدرخواست دسترسی شما تایید شد."
+        welcome_text += f"\n💰 امتیاز اولیه شما: {season_balance} امتیاز"
         welcome_text += "\nمی‌توانید از طریق منوی زیر به امکانات ربات دسترسی داشته باشید."
 
         await context.bot.send_message(
@@ -653,8 +846,8 @@ async def handle_gift_card_message(update: Update, context: ContextTypes.DEFAULT
         from datetime import datetime
         import os
         
-        # اطمینان از وجود پوشه temp
-        temp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'temp')
+        # اطمینان از وجود پوشه tmp
+        temp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'tmp')
         os.makedirs(temp_dir, exist_ok=True)
         
         image_filename = f"giftcard_{user.id}_{int(datetime.now().timestamp())}.png"

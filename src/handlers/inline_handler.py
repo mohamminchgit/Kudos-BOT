@@ -61,9 +61,10 @@ async def handle_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # بررسی حالت کاربر - آیا در حالت ارسال تشکرنامه است یا امتیازدهی
     is_gift_card_mode = context.user_data.get('gift_card_mode', False)
+    is_top_vote_mode = context.user_data.get('top_vote_mode', False)
     
     # اگر در حالت معمولی (امتیازدهی) است، موجودی را بررسی می‌کنیم
-    if not is_gift_card_mode:
+    if not is_gift_card_mode and not is_top_vote_mode:
         try:
             from ..database.models import db_manager
             balance_result = db_manager.execute_query(
@@ -174,13 +175,31 @@ async def handle_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         # ساخت نتیجه برای هر کاربر با توجه به حالت کاربر
         if is_gift_card_mode:
-            # در حالت ارسال تشکرنامه
-            message_text = f"giftcard_selectuser^{user_id}"
+            # در حالت ارسال تشکرنامه - استفاده از دکمه‌های کیبورد به جای پیام مستقیم
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(f"ارسال تشکرنامه به {name}", callback_data=f"giftcard_selectuser^{user_id}")]
+            ])
+            message_text = f"کاربر انتخاب شده: {name}"
             description = f"ارسال تشکرنامه به {name}"
+        elif is_top_vote_mode:
+            # در حالت رأی‌گیری ترین‌ها - استفاده از دکمه‌های کیبورد
+            question_id = context.user_data.get('current_question_id')
+            if question_id:
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(f"انتخاب {name}", callback_data=f"top_select^{question_id}^{user_id}")]
+                ])
+                message_text = f"کاربر انتخاب شده: {name}"
+                description = f"انتخاب {name} برای رأی‌گیری"
+            else:
+                message_text = "خطا در پردازش رأی‌گیری"
+                description = "لطفاً دوباره تلاش کنید"
         else:
-            # در حالت امتیازدهی معمولی
-            message_text = f"voteuser^{user_id}"
-            description = f"انتخاب کاربر {name} برای امتیازدهی"
+            # در حالت امتیازدهی معمولی - استفاده از دکمه‌های کیبورد
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(f"امتیازدهی به {name}", callback_data=f"voteuser^{user_id}")]
+            ])
+            message_text = f"کاربر انتخاب شده: {name}"
+            description = f"انتخاب {name} برای امتیازدهی"
             
         results.append(
             InlineQueryResultArticle(
@@ -190,7 +209,8 @@ async def handle_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE
                     message_text=message_text
                 ),
                 description=description,
-                thumbnail_url=thumbnail_url  # آیکون کاربر
+                thumbnail_url=thumbnail_url,  # آیکون کاربر
+                reply_markup=keyboard  # افزودن کیبورد اینلاین
             )
         )
     

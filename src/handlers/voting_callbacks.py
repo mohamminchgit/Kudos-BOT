@@ -179,9 +179,9 @@ async def _handle_select_user(query, user_id, data):
         if query.message.chat.type == 'private':
             # پاک کردن پیام‌های قبلی اگر در چت خصوصی هستیم
             try:
-                if 'previous_panel_message_id' in query.bot.application.user_data.get(user_id, {}):
-                    prev_msg_id = query.bot.application.user_data[user_id]['previous_panel_message_id']
-                    await query.bot.delete_message(chat_id=query.message.chat_id, message_id=prev_msg_id)
+                if 'previous_panel_message_id' in context.user_data:
+                    prev_msg_id = context.user_data['previous_panel_message_id']
+                    await context.bot.delete_message(chat_id=query.message.chat_id, message_id=prev_msg_id)
             except Exception as e:
                 logger.error(f"خطا در پاک کردن پیام قبلی: {e}")
     
@@ -247,7 +247,7 @@ async def _handle_select_user(query, user_id, data):
         
         # ذخیره شناسه پیام برای امکان پاک کردن بعدی
         if hasattr(query, 'message') and query.message:
-            query.bot.application.user_data.setdefault(user_id, {})['previous_panel_message_id'] = message.message_id
+            context.user_data['previous_panel_message_id'] = message.message_id
             
     except Exception as e:
         logger.error(f"خطا در نمایش دکمه‌های امتیاز: {e}")
@@ -294,6 +294,13 @@ async def _handle_give_points(query, user_id, data, context):
         'amount': amount,
         'touser_name': touser_name
     }
+    
+    # ذخیره اطلاعات پیام فعلی برای ویرایش در مرحله بعدی
+    if hasattr(query, 'message') and query.message:
+        context.user_data['voting_message'] = {
+            'chat_id': query.message.chat_id,
+            'message_id': query.message.message_id
+        }
     
     try:
         await query.edit_message_text(
@@ -366,10 +373,17 @@ async def _handle_confirm_transaction(query, user_id, data, context):
                 (amount, user_id)
             )
             
+            # تبدیل تاریخ میلادی به شمسی
+            import jdatetime
+            from datetime import datetime
+            current_time = datetime.now()
+            jalali_date = jdatetime.datetime.fromgregorian(datetime=current_time)
+            jalali_date_str = jalali_date.strftime("%A %d %B %Y")
+            
             # ثبت تراکنش
             c.execute(
-                "INSERT INTO transactions (user_id, touser, amount, season_id, reason) VALUES (?, ?, ?, ?, ?)", 
-                (user_id, touser_id, amount, season_id, reason)
+                "INSERT INTO transactions (user_id, touser, amount, season_id, reason, message_id) VALUES (?, ?, ?, ?, ?, ?)", 
+                (user_id, touser_id, amount, season_id, reason, query.message.message_id if hasattr(query, 'message') and query.message else None)
             )
             
             # افزایش مجموع امتیازات دریافتی کاربر مقصد
@@ -404,19 +418,27 @@ async def _handle_confirm_transaction(query, user_id, data, context):
         except Exception as e:
             logger.error(f"Error sending notification to user {touser_id}: {e}")
         
+        # تبدیل تاریخ میلادی به شمسی
+        import jdatetime
+        from datetime import datetime
+        current_time = datetime.now()
+        jalali_date = jdatetime.datetime.fromgregorian(datetime=current_time)
+        jalali_date_str = jalali_date.strftime("%A %d %B %Y")
+        
         # ارسال پیام به کانال (اگر تنظیم شده باشد)
         try:
             if hasattr(config, 'CHANNEL_ID') and config.CHANNEL_ID:
                 await context.bot.send_message(
                     chat_id=config.CHANNEL_ID,
-                    text=f"🎯 {sender_name} به {touser_name} {amount} امتیاز داد!\n\n"
-                         f"💬 دلیل: {reason}",
+                    text=f"{sender_name} {amount} امتیاز به {touser_name} داد و نوشت :\n\n"
+                         f"💬 {reason}\n\n"
+                         f"⏰ {jalali_date_str}",
                     parse_mode="HTML"
                 )
         except Exception as e:
             logger.error(f"Error sending message to channel: {e}")
         
-        # اطلاع به کاربر فرستنده
+        # اطلاع به کاربر فرستنده - ویرایش پیام فعلی
         await query.edit_message_text(
             f"✅ {amount} امتیاز به {touser_name} داده شد!\n\n"  
             f"دلیل: {reason}",
@@ -426,6 +448,7 @@ async def _handle_confirm_transaction(query, user_id, data, context):
         # پاک کردن اطلاعات تراکنش از context
         context.user_data.pop('pending_transaction', None)
         context.user_data.pop('waiting_for_reason', None)
+        context.user_data.pop('voting_message', None)  # پاک کردن اطلاعات پیام
         
     except Exception as e:
         logger.error(f"Error in transaction: {e}")

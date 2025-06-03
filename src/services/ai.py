@@ -473,7 +473,8 @@ def save_user_perspective(user_id, season_id, perspective_text):
     conn = None
     try:
         # ایجاد اتصال جدید به دیتابیس
-        conn = db_utils.get_db_connection()
+        conn = sqlite3.connect(config.DB_PATH)
+        conn.row_factory = sqlite3.Row
         c = conn.cursor()
         
         # بررسی وجود جدول ai_user_perspectives
@@ -673,16 +674,20 @@ def generate_user_profile(user_id, force_update=False, is_admin=False):
 def is_admin(user_id):
     """بررسی اینکه آیا کاربر ادمین است یا خیر"""
     try:
-        admin = db_utils.execute_db_query(
-            "SELECT role FROM admins WHERE user_id = ?", 
-            (user_id,), 
-            fetchone=True
-        )
+        conn = sqlite3.connect(config.DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        c.execute("SELECT role FROM admins WHERE user_id = ?", (user_id,))
+        admin = c.fetchone()
         
         return admin is not None
     except Exception as e:
         logger.error(f"خطا در بررسی وضعیت ادمین: {e}")
         return False
+    finally:
+        if conn:
+            conn.close()
 
 def analyze_admin_data(season_id=None, force_update=True):
     """تحلیل داده‌ها برای ادمین
@@ -844,6 +849,40 @@ def analyze_admin_data(season_id=None, force_update=True):
         # اطمینان از بسته شدن اتصال
         if conn:
             conn.close()
+
+def get_top_vote_results(question_id=None, season_id=None):
+    """دریافت نتایج رأی‌گیری ترین‌ها"""
+    try:
+        # استفاده از voted_for_user_id به جای voted_for
+        if question_id:
+            # دریافت نتایج یک سوال خاص
+            query = """
+                SELECT v.voted_for_user_id, COUNT(v.vote_id) AS vote_count, u.name
+                FROM top_votes v
+                JOIN users u ON v.voted_for_user_id = u.user_id
+                WHERE v.question_id = ? AND v.season_id = ?
+                GROUP BY v.voted_for_user_id
+                ORDER BY vote_count DESC
+            """
+            params = (question_id, season_id)
+        else:
+            # دریافت نتایج کلی
+            query = """
+                SELECT v.voted_for_user_id, COUNT(v.vote_id) AS vote_count, u.name
+                FROM top_votes v
+                JOIN users u ON v.voted_for_user_id = u.user_id
+                WHERE v.season_id = ?
+                GROUP BY v.voted_for_user_id
+                ORDER BY vote_count DESC
+            """
+            params = (season_id,)
+        
+        from ..database.models import db_manager
+        results = db_manager.execute_query(query, params)
+        return [(row[0], row[1], row[2]) for row in results]
+    except Exception as e:
+        logger.error(f"خطا در دریافت نتایج رأی‌گیری: {e}")
+        return []
 
 # مثال استفاده
 if __name__ == "__main__":

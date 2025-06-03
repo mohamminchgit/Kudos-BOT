@@ -434,14 +434,13 @@ def _get_top_results_for_question(question_id):
         conn = sqlite3.connect(config.DB_PATH)
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
-        
-        # شمارش رأی‌ها برای هر کاربر
+          # شمارش رأی‌ها برای هر کاربر
         c.execute("""
-            SELECT v.voted_for, COUNT(v.id) AS vote_count, u.name
+            SELECT v.voted_for_user_id, COUNT(v.vote_id) AS vote_count, u.name
             FROM top_votes v
-            JOIN users u ON v.voted_for = u.user_id
+            JOIN users u ON v.voted_for_user_id = u.user_id
             WHERE v.question_id = ? AND v.season_id = ?
-            GROUP BY v.voted_for
+            GROUP BY v.voted_for_user_id
             ORDER BY vote_count DESC
         """, (question_id, season_id))
         
@@ -449,8 +448,39 @@ def _get_top_results_for_question(question_id):
         conn.close()
         
         if results:
-            return [(row['voted_for'], row['vote_count'], row['name']) for row in results]
+            return [(row['voted_for_user_id'], row['vote_count'], row['name']) for row in results]
         return []
+    except Exception as e:
+        logger.error(f"خطا در دریافت نتایج رأی‌گیری: {e}")
+        return []
+
+async def _get_top_vote_results(question_id=None, season_id=None):
+    """دریافت نتایج رأی‌گیری ترین‌ها"""
+    try:
+        # استفاده از voted_for_user_id به جای voted_for
+        if question_id:            # دریافت نتایج یک سوال خاص
+            query = """
+                SELECT v.voted_for_user_id, COUNT(v.vote_id) AS vote_count, u.name
+                FROM top_votes v
+                JOIN users u ON v.voted_for_user_id = u.user_id
+                WHERE v.question_id = ? AND v.season_id = ?
+                GROUP BY v.voted_for_user_id
+                ORDER BY vote_count DESC
+            """
+            params = (question_id, season_id)
+        else:            # دریافت نتایج کلی
+            query = """
+                SELECT v.voted_for_user_id, COUNT(v.vote_id) AS vote_count, u.name
+                FROM top_votes v
+                JOIN users u ON v.voted_for_user_id = u.user_id
+                WHERE v.season_id = ?
+                GROUP BY v.voted_for_user_id
+                ORDER BY vote_count DESC
+            """
+            params = (season_id,)
+        
+        results = db_manager.execute_query(query, params)
+        return [(row[0], row[1], row[2]) for row in results]
     except Exception as e:
         logger.error(f"خطا در دریافت نتایج رأی‌گیری: {e}")
         return []

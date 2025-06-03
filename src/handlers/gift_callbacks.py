@@ -26,13 +26,13 @@ async def handle_gift_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
     data = query.data
     
     if data == "letter_start^":
-        await _handle_letter_start(query, user.id)
+        await _handle_letter_start(query, user.id, context)
     elif data.startswith("giftcard_selectuser^"):
         await _handle_select_user(query, user.id, data, context)
     else:
         await query.answer("این قابلیت در حال توسعه است.")
 
-async def _handle_letter_start(query, user_id):
+async def _handle_letter_start(query, user_id, context):
     """نمایش صفحه شروع ارسال تشکرنامه"""
     await query.answer()
     
@@ -61,12 +61,8 @@ async def _handle_letter_start(query, user_id):
         fetchone=True
     )
     show_all_users = show_all_users_result[0] if show_all_users_result else "0"
-    
-    # تنظیم وضعیت برای تشخیص حالت ارسال تشکرنامه در انتخاب کاربر با جستجو
-    # دسترسی به context کاربر
-    application = query.bot.application
-    context = application.context_types.context.from_job_queue(application.job_queue)
-    context.user_data = application.user_data.setdefault(user_id, {})
+      # تنظیم وضعیت برای تشخیص حالت ارسال تشکرنامه در انتخاب کاربر با جستجو
+    # دسترسی مستقیم به context که از پارامتر تابع منتقل شده
     
     # پاک کردن سایر وضعیت‌ها که ممکن است مزاحمت ایجاد کند
     context.user_data.pop('top_vote_mode', None)

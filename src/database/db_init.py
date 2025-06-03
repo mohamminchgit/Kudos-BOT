@@ -152,6 +152,8 @@ try:
     add_column_if_not_exists("users", "is_approved", "INTEGER DEFAULT 0")
     add_column_if_not_exists("users", "birthday", "TEXT")
     add_column_if_not_exists("users", "created_at", "TEXT DEFAULT CURRENT_TIMESTAMP")
+    add_column_if_not_exists("users", "total_received", "INTEGER DEFAULT 0")
+    add_column_if_not_exists("users", "join_date", "TEXT DEFAULT CURRENT_TIMESTAMP")
     # اگر ستونی مثل 'balance' یا 'username' یا 'name' حذف شده بود، دوباره اضافه شود
     add_column_if_not_exists("users", "balance", "INTEGER DEFAULT 0")
     add_column_if_not_exists("users", "username", "TEXT")
@@ -224,6 +226,38 @@ CREATE TABLE IF NOT EXISTS ai_user_profiles (
 )
 ''')
 
+# ایجاد جدول پروفایل‌های کاربر (برای AI)
+c.execute('''
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    profile_text TEXT,
+    created_at TEXT
+)
+''')
+
+# ایجاد جدول دیدگاه‌های کاربر (برای AI)
+c.execute('''
+CREATE TABLE IF NOT EXISTS user_perspectives (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL,
+    perspective TEXT,
+    created_at TEXT,
+    UNIQUE(user_id, season_id)
+)
+''')
+
+# ایجاد جدول تنظیمات
+c.execute('''
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    description TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
 # اضافه کردن جدول‌های مورد نیاز برای ماژول هوش مصنوعی
 c.execute('''
 CREATE TABLE IF NOT EXISTS ai_user_perspectives (
@@ -249,7 +283,14 @@ except Exception as e:
 
 def add_missing_columns():
     """اضافه کردن ستون‌های گم شده به دیتابیس"""
-    conn = get_db_connection()
+    try:
+        from .db_utils import get_db_connection
+        conn = get_db_connection()
+    except ImportError:
+        # اگر import نشد، مستقیماً اتصال ایجاد کن
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        
     try:
         c = conn.cursor()
         

@@ -128,10 +128,10 @@ def create_gift_card_image(sender_name: str, receiver_name: str, message: str, o
             footer_font = ImageFont.truetype("static/fonts/Dana-Regular.ttf", 16)
         except OSError:
             # استفاده از فونت پیش‌فرض در صورت عدم وجود فونت دلخواه
-            title_font = ImageFont.truetype("static/fonts/Dana-Regular.ttf", 32)
-            header_font = ImageFont.truetype("static/fonts/Dana-Regular.ttf", 24)  
-            message_font = ImageFont.truetype("static/fonts/Dana-Regular.ttf", 22)
-            footer_font = ImageFont.truetype("static/fonts/Dana-Regular.ttf", 16)
+            title_font = ImageFont.load_default()
+            header_font = ImageFont.load_default()
+            message_font = ImageFont.load_default()
+            footer_font = ImageFont.load_default()
         
         # افزودن حاشیه ساده دور کارت
         border = 10

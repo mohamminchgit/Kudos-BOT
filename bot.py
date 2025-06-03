@@ -132,9 +132,8 @@ async def main():
     
     # اضافه کردن هندلر برای inline query
     app.add_handler(InlineQueryHandler(handle_inline_query))
-    
-    # اجرای ربات
-    print("ربات اجرا شد...")
+      # اجرای ربات
+    print("Bot started successfully...")
     logger.info("ربات با موفقیت راه‌اندازی شد")
     
     await app.initialize()
