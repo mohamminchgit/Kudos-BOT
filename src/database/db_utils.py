@@ -99,58 +99,7 @@ def get_active_season():
 
 def get_all_seasons():
     """دریافت همه فصل‌ها"""
-    try:
-        result = execute_db_query("SELECT id, name, balance, is_active FROM season ORDER BY id DESC")
-        if not result:
-            logger.warning("هیچ فصلی در دیتابیس یافت نشد!")
-        return result or []
-    except Exception as e:
-        logger.error(f"خطا در دریافت فصل‌ها: {e}")
-        return []
-
-def get_user_profile(user_id):
-    """دریافت پروفایل کاربر"""
-    return execute_db_query("""
-        SELECT u.*, 
-            (SELECT SUM(t.amount) 
-             FROM transactions t
-             WHERE t.touser = u.user_id) AS total_received
-        FROM users u
-        WHERE u.user_id=?
-    """, (user_id,), fetchone=True)
-
-def is_user_approved(user_id):
-    """بررسی آیا کاربر در سیستم تایید شده است"""
-    return execute_db_query("SELECT * FROM users WHERE user_id=?", (user_id,), fetchone=True) is not None
-
-def get_user_by_id(user_id):
-    """دریافت اطلاعات کاربر بر اساس شناسه"""
-    return execute_db_query("SELECT * FROM users WHERE user_id=?", (user_id,), fetchone=True)
-
-def get_active_season():
-    """دریافت فصل فعال"""
-    try:
-        result = execute_db_query("SELECT id, name, balance FROM season WHERE is_active=1 LIMIT 1", fetchone=True)
-        if result:
-            return result
-        logger.warning("هیچ فصل فعالی یافت نشد - استفاده از مقادیر پیش‌فرض")
-        return (config.SEASON_ID, config.SEASON_NAME, 10)  # مقادیر پیش‌فرض
-    except Exception as e:
-        logger.warning(f"مشکل در دسترسی به جدول season: {e} - استفاده از مقادیر پیش‌فرض")
-        return (config.SEASON_ID, config.SEASON_NAME, 10)  # مقادیر پیش‌فرض
-
-def get_all_seasons():
-    """دریافت همه فصل‌ها"""
     return execute_db_query("SELECT * FROM season ORDER BY is_active DESC, id DESC")
-
-def get_user_profile(user_id):
-    """دریافت پروفایل کاربر"""
-    return execute_db_query("""
-        SELECT u.*, 
-            (SELECT SUM(amount) FROM transactions WHERE touser = u.user_id) as total_received
-        FROM users u 
-        WHERE u.user_id = ?
-    """, (user_id,), fetchone=True)
 
 def get_user_transactions(user_id, given=True, offset=0, limit=3, season_id=None):
     """دریافت تراکنش‌های کاربر با امکان فیلتر بر اساس فصل"""
@@ -364,3 +313,37 @@ def activate_season(season_id):
     except Exception as e:
         logger.error(f"خطا در فعال‌سازی فصل: {e}")
         return 10  # مقدار پیش‌فرض
+
+def get_user_profile(user_id):
+    """دریافت پروفایل کاربر شامل نام، موجودی و مجموع دریافتی"""
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        
+        # دریافت اطلاعات کاربر
+        c.execute("""
+            SELECT u.name, u.user_id, us.season_id, u.balance,
+                (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE touser = u.user_id AND season_id = (
+                    SELECT id FROM season WHERE is_active = 1
+                )) as total_received
+            FROM users u
+            LEFT JOIN user_season us ON u.user_id = us.user_id AND us.season_id = (
+                SELECT id FROM season WHERE is_active = 1
+            )
+            WHERE u.user_id = ?
+        """, (user_id,))
+        
+        result = c.fetchone()
+        
+        if result:
+            # تبدیل به لیست برای سازگاری با کد قبلی
+            profile = list(result)
+            return profile
+        else:
+            # کاربر یافت نشد
+            return None
+    except Exception as e:
+        logger.error(f"خطا در دریافت پروفایل کاربر: {e}")
+        return None
+    finally:
+        conn.close()

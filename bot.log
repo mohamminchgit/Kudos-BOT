@@ -207,3 +207,51 @@
 2025-06-08 10:30:41,088 - __main__ - INFO - در حال بستن ربات...
 2025-06-08 10:31:03,206 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
 2025-06-08 10:31:03,720 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:31:33,894 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:31:36,281 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:31:36,840 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:31:41,180 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: name '_process_next_top_question' is not defined
+2025-06-08 10:31:41,181 - __main__ - ERROR - اطلاعات خطا: NameError: name '_process_next_top_question' is not defined
+2025-06-08 10:31:51,609 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:31:52,166 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:31:53,151 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:31:53,936 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:31:54,057 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:31:57,165 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:31:57,579 - __main__ - INFO - ربات با موفقیت بسته شد
+2025-06-08 10:32:08,678 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:32:09,222 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:32:09,936 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: name '_process_next_top_question' is not defined
+2025-06-08 10:32:09,937 - __main__ - ERROR - اطلاعات خطا: NameError: name '_process_next_top_question' is not defined
+2025-06-08 10:32:14,478 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: name '_process_next_top_question' is not defined
+2025-06-08 10:32:14,478 - __main__ - ERROR - اطلاعات خطا: NameError: name '_process_next_top_question' is not defined
+2025-06-08 10:34:38,294 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:35:00,658 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:35:01,189 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:35:01,841 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: Query is too old and response timeout expired or query id is invalid
+2025-06-08 10:35:01,842 - __main__ - ERROR - اطلاعات خطا: BadRequest: Query is too old and response timeout expired or query id is invalid
+2025-06-08 10:35:01,843 - __main__ - WARNING - خطای شبکه تشخیص داده شد: Query is too old and response timeout expired or query id is invalid
+2025-06-08 10:36:28,310 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:36:38,974 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:36:39,612 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:36:42,702 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: You can not assign a new value to user_data, see https://github.com/python-telegram-bot/python-telegram-bot/wiki/Storing-bot%2C-user-and-chat-related-data
+2025-06-08 10:36:42,702 - __main__ - ERROR - اطلاعات خطا: AttributeError: You can not assign a new value to user_data, see https://github.com/python-telegram-bot/python-telegram-bot/wiki/Storing-bot%2C-user-and-chat-related-data
+2025-06-08 10:36:48,719 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: 'NoneType' object has no attribute 'from_user'
+2025-06-08 10:36:48,720 - __main__ - ERROR - اطلاعات خطا: AttributeError: 'NoneType' object has no attribute 'from_user'
+2025-06-08 10:36:53,991 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: 'NoneType' object has no attribute 'from_user'
+2025-06-08 10:36:53,992 - __main__ - ERROR - اطلاعات خطا: AttributeError: 'NoneType' object has no attribute 'from_user'
+2025-06-08 10:42:00,426 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:45:50,501 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:45:51,202 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:45:51,929 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: Query is too old and response timeout expired or query id is invalid
+2025-06-08 10:45:51,929 - __main__ - ERROR - اطلاعات خطا: BadRequest: Query is too old and response timeout expired or query id is invalid
+2025-06-08 10:45:51,930 - __main__ - WARNING - خطای شبکه تشخیص داده شد: Query is too old and response timeout expired or query id is invalid
+2025-06-08 10:45:54,924 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:46:01,157 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:46:01,793 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:51:06,597 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:51:20,037 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:51:20,634 - __main__ - INFO - ربات در حال کار است
+2025-06-08 10:51:22,107 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:51:43,857 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:51:44,406 - __main__ - INFO - ربات در حال کار است

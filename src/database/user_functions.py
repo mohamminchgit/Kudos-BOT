@@ -58,44 +58,6 @@ def get_all_users(exclude_id=None):
     else:
         return db_manager.execute_query("SELECT user_id, name FROM users")
 
-def get_user_profile(user_id):
-    """دریافت پروفایل کاربر شامل نام، موجودی و مجموع دریافتی"""
-    conn = get_db_connection()
-    try:
-        c = conn.cursor()
-        
-        # دریافت اطلاعات کاربر
-        c.execute("""
-            SELECT u.name, u.user_id, us.season_id, u.balance, COALESCE(u.total_received, 0) as total_received
-            FROM users u
-            LEFT JOIN user_season us ON u.user_id = us.user_id AND us.season_id = (
-                SELECT id FROM season WHERE is_active = 1
-            )
-            WHERE u.user_id = ?
-        """, (user_id,))
-        
-        result = c.fetchone()
-        
-        if result:
-            # اگر total_received NULL باشد، مقدار 0 را جایگزین می‌کنیم
-            profile = list(result)
-            if profile[4] is None:
-                profile[4] = 0
-                
-                # همچنین مقدار را در دیتابیس به‌روزرسانی می‌کنیم
-                c.execute("UPDATE users SET total_received = 0 WHERE user_id = ? AND total_received IS NULL", (user_id,))
-                conn.commit()
-            
-            return profile
-        else:
-            # کاربر یافت نشد
-            return None
-    except Exception as e:
-        logger.error(f"خطا در دریافت پروفایل کاربر: {e}")
-        return None
-    finally:
-        conn.close()
-
 def get_user_transactions(user_id, given=True, offset=0, limit=3, season_id=None):
     """دریافت تراکنش‌های کاربر با امکان فیلتر بر اساس فصل"""
     season_filter = ""

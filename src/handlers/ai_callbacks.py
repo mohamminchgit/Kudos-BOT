@@ -9,19 +9,26 @@ Handles all AI-related callback functions including:
 """
 
 import logging
+import os
+import sys
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import sqlite3
 import datetime
+import random
+
+# اضافه کردن مسیر پوشه اصلی برای دسترسی به config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+import config
 
 # Database and utility imports
 from ..database.models import DatabaseManager
 from ..database.user_functions import get_user_by_id, get_all_users
+from ..database.db_utils import get_user_profile
 from ..database.season_functions import get_active_season
 from ..services.ai import get_user_perspective, generate_user_profile, analyze_admin_data, AI_MODULE_AVAILABLE
 from ..utils.ui_helpers_new import main_menu_keyboard
-from .top_vote_handlers import handle_top_vote_callbacks, _get_active_top_questions, _get_top_results_for_question
-import config
+from .top_vote_handlers import handle_top_vote_callbacks, _process_next_top_question, _save_top_vote, _get_active_top_questions, _get_top_results_for_question
 
 # Initialize database manager
 db_manager = DatabaseManager()

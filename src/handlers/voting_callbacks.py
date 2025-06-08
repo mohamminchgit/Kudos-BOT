@@ -12,7 +12,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import config
 
 from ..database.models import db_manager
-from ..database.user_functions import get_user_profile, get_all_users
+from ..database.user_functions import get_all_users
+from ..database.db_utils import get_user_profile
 from ..database.season_functions import get_active_season
 from ..utils.ui_helpers_new import main_menu_keyboard
 
@@ -407,12 +408,6 @@ async def _handle_confirm_transaction(query, user_id, data, context):
             c.execute(
                 "INSERT INTO transactions (user_id, touser, amount, season_id, reason, message_id) VALUES (?, ?, ?, ?, ?, ?)", 
                 (user_id, touser_id, amount, season_id, reason, query.message.message_id if hasattr(query, 'message') and query.message else None)
-            )
-            
-            # افزایش مجموع امتیازات دریافتی کاربر مقصد
-            c.execute(
-                "UPDATE users SET total_received = total_received + ? WHERE user_id = ?", 
-                (amount, touser_id)
             )
             
             # کامیت کردن تراکنش

@@ -11,9 +11,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import config
 
-from ..database.user_functions import get_user_profile, get_user_transactions, count_user_transactions, get_scoreboard
+from ..database.user_functions import get_user_transactions, count_user_transactions, get_scoreboard
 from ..database.season_functions import get_active_season, get_all_seasons
-from ..database.db_utils import get_db_connection
+from ..database.db_utils import get_db_connection, get_user_profile
 from ..utils.ui_helpers_new import main_menu_keyboard
 from ..utils.season_utils import get_season_scoreboard, get_user_season_stats
 
