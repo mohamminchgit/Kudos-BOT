@@ -205,3 +205,5 @@
 2025-06-08 10:30:34,363 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: name '_process_next_top_question' is not defined
 2025-06-08 10:30:34,363 - __main__ - ERROR - اطلاعات خطا: NameError: name '_process_next_top_question' is not defined
 2025-06-08 10:30:41,088 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 10:31:03,206 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 10:31:03,720 - __main__ - INFO - ربات در حال کار است
