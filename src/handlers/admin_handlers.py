@@ -200,6 +200,11 @@ async def handle_admin_callbacks(update: Update, context: ContextTypes.DEFAULT_T
             await _handle_toggle_show_users(query, user_id)
             return True
             
+        elif data == "toggle_ai_features^":
+            # تغییر وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+            await _handle_toggle_ai_features(query, user_id)
+            return True
+            
         elif data == "admin_users^" or data == "admin_transactions^" or data == "admin_stats^" or data == "manage_admins^" or data == "broadcast_menu^" or data == "manage_top_questions^" or data == "manage_seasons^":
             # این کالبک‌ها هنوز در حال توسعه هستند
             await query.answer("این بخش در حال توسعه است و به زودی آماده خواهد شد.", show_alert=True)
@@ -249,6 +254,48 @@ async def _handle_toggle_show_users(query, user_id):
     await query.edit_message_text(
         "👨‍💼 <b>پنل مدیریت</b>\n\n"
         f"نمایش لیست کاربران با موفقیت {status_text} شد.\n"
+        "به پنل مدیریت خوش آمدید. لطفاً گزینه‌ی مورد نظر خود را انتخاب کنید:",
+        parse_mode="HTML",
+        reply_markup=admin_keyboard
+    )
+
+async def _handle_toggle_ai_features(query, user_id):
+    """تغییر وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی"""
+    from ..database.models import db_manager
+    
+    # بررسی وضعیت فعلی
+    result = db_manager.execute_query(
+        "SELECT value FROM settings WHERE key='ai_features_enabled'", 
+        fetchone=True
+    )
+    
+    current_value = result[0] if result else "1"  # پیش‌فرض: فعال
+    new_value = "0" if current_value == "1" else "1"
+    
+    # آپدیت وضعیت در دیتابیس
+    if result:
+        db_manager.execute_query(
+            "UPDATE settings SET value=? WHERE key='ai_features_enabled'", 
+            (new_value,), 
+            commit=True
+        )
+    else:
+        db_manager.execute_query(
+            "INSERT INTO settings (key, value) VALUES ('ai_features_enabled', ?)", 
+            (new_value,), 
+            commit=True
+        )
+    
+    # نمایش پیام موفقیت
+    status_text = "فعال" if new_value == "1" else "غیرفعال"
+    await query.answer(f"قابلیت‌های هوش مصنوعی {status_text} شد.", show_alert=True)
+    
+    # به‌روزرسانی پنل ادمین
+    from ..utils.ui_helpers_new import create_admin_panel_keyboard
+    admin_keyboard = create_admin_panel_keyboard(user_id)
+    
+    await query.edit_message_text(
+        "👨‍💼 <b>پنل مدیریت</b>\n\n"
         "به پنل مدیریت خوش آمدید. لطفاً گزینه‌ی مورد نظر خود را انتخاب کنید:",
         parse_mode="HTML",
         reply_markup=admin_keyboard

@@ -40,7 +40,13 @@ def main_menu_keyboard(user_id=None):
         else:
             keyboard.append([InlineKeyboardButton(f"🏆 ترین‌های {season_name}!", callback_data="top_vote^")])
     
-    keyboard.append([InlineKeyboardButton("🤖 دستیار هوشمند", callback_data="ai_chat^")])
+    # بررسی وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+    ai_features_enabled = execute_db_query("SELECT value FROM settings WHERE key='ai_features_enabled'", fetchone=True)
+    ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+    
+    # فقط اگر قابلیت‌های هوش مصنوعی فعال باشند یا کاربر ادمین باشد، دکمه را نمایش بده
+    if ai_features_enabled == "1" or (user_id and execute_db_query("SELECT role FROM admins WHERE user_id=?", (user_id,), fetchone=True)):
+        keyboard.append([InlineKeyboardButton("🤖 دستیار هوشمند", callback_data="ai_chat^")])
     
     keyboard += [
         [InlineKeyboardButton("» پروفایل شما", callback_data="userprofile^"), InlineKeyboardButton("ردپای امتیازات", callback_data="historypoints^")],
@@ -125,6 +131,14 @@ def create_admin_panel_keyboard(user_id):
         show_all_users = show_all_users[0] if show_all_users else "0"
         button_text = "🔄 غیرفعال کردن نمایش کاربران" if show_all_users == "1" else "🔄 فعال کردن نمایش کاربران"
         keyboard.append([InlineKeyboardButton(button_text, callback_data="toggle_show_users^")])
+    
+    # اضافه کردن گزینه فعال/غیرفعال کردن قابلیت‌های هوش مصنوعی
+    if "admin_stats" in allowed:
+        # بررسی وضعیت فعلی قابلیت‌های هوش مصنوعی
+        ai_features_enabled = execute_db_query("SELECT value FROM settings WHERE key='ai_features_enabled'", fetchone=True)
+        ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+        button_text = "🤖 غیرفعال کردن هوش مصنوعی" if ai_features_enabled == "1" else "🤖 فعال کردن هوش مصنوعی"
+        keyboard.append([InlineKeyboardButton(button_text, callback_data="toggle_ai_features^")])
     
     keyboard.append([InlineKeyboardButton("» بازگشت به منوی اصلی", callback_data="userpanel^")])
     

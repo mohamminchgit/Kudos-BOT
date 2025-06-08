@@ -628,6 +628,24 @@ async def handle_inline_user_selection(update: Update, context: ContextTypes.DEF
 
 async def handle_ai_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE, message_text: str):
     """پردازش پیام‌های چت با هوش مصنوعی"""
+    # بررسی وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+    from ..database.db_utils import execute_db_query
+    ai_features_enabled = execute_db_query(
+        "SELECT value FROM settings WHERE key='ai_features_enabled'", 
+        fetchone=True
+    )
+    ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+    
+    # اگر قابلیت‌های هوش مصنوعی غیرفعال شده باشند و کاربر ادمین نباشد، پیام مناسب نمایش دهیم
+    if ai_features_enabled == "0":
+        from ..handlers.admin_handlers import is_admin
+        if not is_admin(update.effective_user.id):
+            await update.message.reply_text(
+                "⚠️ این بخش موقتاً غیرفعال است.",
+                reply_markup=main_menu_keyboard(update.effective_user.id)
+            )
+            return
+    
     if not AI_MODULE_AVAILABLE:
         await update.message.reply_text("ماژول هوش مصنوعی در دسترس نیست.")
         return

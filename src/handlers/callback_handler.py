@@ -73,7 +73,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _handle_main_menu(query, user.id)
     elif data.startswith(("userprofile^", "historypoints^", "receivedpoints^", "givenpoints^", "season_archive", "season_details^", "Scoreboard^")):
         await handle_user_callbacks(update, context)
-    elif data.startswith(("admin_", "manage_", "approve_user^", "reject_user^", "broadcast_", "admin_panel^")):
+    elif data.startswith(("admin_", "manage_", "approve_user^", "reject_user^", "broadcast_", "admin_panel^", "toggle_show_users^", "toggle_ai_features^")):
         await handle_admin_callbacks(update, context)
     elif data.startswith(("tovote^", "voteuser^", "givepoint^", "Confirm^", "vu^", "gp^", "improve_reason^", "custom_points^")):
         await handle_voting_callbacks(update, context)

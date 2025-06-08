@@ -40,6 +40,26 @@ async def handle_ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
     user = update.effective_user
     
+    # بررسی وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+    ai_features_enabled = db_manager.execute_query(
+        "SELECT value FROM settings WHERE key='ai_features_enabled'", 
+        fetchone=True
+    )
+    ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+    
+    # اگر قابلیت‌های هوش مصنوعی غیرفعال شده باشند و کاربر ادمین نباشد، پیام مناسب نمایش دهیم
+    if ai_features_enabled == "0":
+        from ..handlers.admin_handlers import is_admin
+        if not is_admin(user.id):
+            await query.answer("⚠️ این بخش موقتاً غیرفعال است.", show_alert=True)
+            await query.edit_message_text(
+                "🤖 <b>دستیار هوشمند</b>\n\n"
+                "⚠️ این بخش به صورت موقت غیرفعال شده است. لطفاً بعداً مراجعه کنید.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data="userpanel^")]]),
+                parse_mode="HTML"
+            )
+            return
+    
     if callback_data == "ai_chat^":
         # چون فقط از Gemini استفاده می‌کنیم، مستقیماً به تنظیم مدل می‌رویم
         context.user_data['ai_model'] = "gemini"

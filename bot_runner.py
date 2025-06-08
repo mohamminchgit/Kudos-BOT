@@ -56,9 +56,10 @@ class BotRunner:
         
         # تنظیمات
         self.RESTART_DELAY = 5  # ثانیه
-        self.HEALTH_CHECK_INTERVAL = 10  # ثانیه
-        self.MAX_RESTARTS_PER_HOUR = 10
+        self.HEALTH_CHECK_INTERVAL = 10  # ثانیه - کاهش فاصله بررسی
+        self.MAX_RESTARTS_PER_HOUR = 20  # افزایش تعداد مجاز ری‌استارت
         self.PROCESS_TIMEOUT = 5  # ثانیه برای تایم‌اوت
+        self.PING_INTERVAL = 120  # هر 2 دقیقه یک بار ارسال پینگ به پروسه
         
         # مدیریت signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -172,6 +173,34 @@ class BotRunner:
             if proc.status() == psutil.STATUS_ZOMBIE:
                 logger.warning("⚠️ ربات به حالت zombie رفته")
                 return False
+                
+            # بررسی مصرف CPU برای تشخیص حالت خواب یا قفل شدن
+            try:
+                cpu_percent = proc.cpu_percent(interval=0.5)
+                memory_percent = proc.memory_percent()
+                
+                # اگر مصرف CPU خیلی پایین باشد، ممکن است به خواب رفته باشد
+                if cpu_percent < 0.1:
+                    # بررسی زمان آخرین پینگ در فایل وضعیت
+                    status_file = BOT_DIR / "runner_status.json"
+                    if status_file.exists():
+                        try:
+                            with open(status_file, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                                if 'last_ping' in data:
+                                    last_ping = data['last_ping']
+                                    current_time = time.time()
+                                    # اگر بیش از 5 دقیقه از آخرین پینگ گذشته باشد، نیاز به ری‌استارت است
+                                    if (current_time - last_ping) > 300:
+                                        logger.warning("⚠️ ربات احتمالاً به خواب رفته است (عدم پاسخ به پینگ)")
+                                        return False
+                        except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
+                            logger.error(f"❌ خطا در خواندن فایل وضعیت: {e}")
+                
+                logger.debug(f"📊 وضعیت ربات: CPU: {cpu_percent:.1f}%, RAM: {memory_percent:.1f}%")
+            except Exception as e:
+                logger.error(f"❌ خطا در بررسی مصرف منابع: {e}")
+                
         except psutil.NoSuchProcess:
             return False
             
@@ -192,8 +221,11 @@ class BotRunner:
         """مانیتورینگ مداوم ربات"""
         logger.info("👁️ شروع مانیتورینگ ربات...")
         
+        last_ping_time = time.time()
+        
         while not self.stop_event.is_set():
             try:
+                # بررسی سلامت بات
                 if not self.is_bot_healthy():
                     logger.warning("⚠️ ربات سالم نیست!")
                     
@@ -214,13 +246,53 @@ class BotRunner:
                     if not self.is_running:
                         self.is_running = True
                         
+                    # ارسال سیگنال ping به پروسه برای جلوگیری از به خواب رفتن
+                    current_time = time.time()
+                    if (current_time - last_ping_time) >= self.PING_INTERVAL:
+                        self._ping_bot_process()
+                        last_ping_time = current_time
+                        
                 # انتظار قبل از بررسی بعدی
                 self.stop_event.wait(self.HEALTH_CHECK_INTERVAL)
                 
             except Exception as e:
                 logger.error(f"❌ خطا در مانیتورینگ: {e}")
                 self.stop_event.wait(5)
-    
+                
+    def _ping_bot_process(self):
+        """ارسال پینگ به پروسه بات برای جلوگیری از به خواب رفتن"""
+        try:
+            if self.bot_process and self.bot_process.poll() is None:
+                logger.debug("🔔 ارسال پینگ به پروسه بات...")
+                
+                # بررسی وجود فایل وضعیت
+                status_file = BOT_DIR / "runner_status.json"
+                if status_file.exists():
+                    # بروزرسانی تایم‌استمپ در فایل وضعیت
+                    try:
+                        with open(status_file, 'r+', encoding='utf-8') as f:
+                            data = json.load(f)
+                            data['last_ping'] = time.time()
+                            f.seek(0)
+                            f.truncate()
+                            json.dump(data, f, indent=2, ensure_ascii=False)
+                        logger.debug("✅ پینگ با موفقیت ارسال شد")
+                    except Exception as e:
+                        logger.error(f"❌ خطا در بروزرسانی فایل وضعیت: {e}")
+                else:
+                    # ایجاد فایل وضعیت
+                    with open(status_file, 'w', encoding='utf-8') as f:
+                        json.dump({
+                            'running': self.is_running,
+                            'restart_count': self.restart_count,
+                            'last_restart': self.last_restart.isoformat() if self.last_restart else None,
+                            'pid': self.bot_process.pid if self.bot_process else None,
+                            'last_ping': time.time()
+                        }, f, indent=2, ensure_ascii=False)
+                    logger.debug("✅ فایل وضعیت ایجاد و پینگ ثبت شد")
+        except Exception as e:
+            logger.error(f"❌ خطا در ارسال پینگ به پروسه بات: {e}")
+            
     def get_status(self):
         """دریافت وضعیت فعلی"""
         status = {

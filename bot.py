@@ -170,17 +170,53 @@ async def main():
 
 async def keep_alive(bot):
     """ارسال درخواست‌های منظم برای حفظ اتصال"""
+    ping_count = 0
+    ping_interval = 120  # هر 2 دقیقه یک بار پینگ
+    update_status_interval = 5  # هر 5 پینگ یکبار بروزرسانی فایل وضعیت
+    
     while True:
         try:
-            # هر 5 دقیقه یک درخواست ساده به API تلگرام ارسال می‌کنیم
+            # ارسال یک درخواست ساده به API تلگرام
             logger.debug("ارسال درخواست keep-alive...")
             await bot.get_me()
             logger.debug("درخواست keep-alive با موفقیت انجام شد")
+            
+            # بروزرسانی فایل وضعیت برای ارتباط با bot_runner
+            ping_count += 1
+            if ping_count % update_status_interval == 0:
+                try:
+                    import json
+                    import time
+                    import os
+                    
+                    status_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runner_status.json")
+                    
+                    # خواندن و بروزرسانی فایل وضعیت
+                    try:
+                        if os.path.exists(status_path):
+                            with open(status_path, 'r+', encoding='utf-8') as f:
+                                data = json.load(f)
+                                data['last_bot_ping'] = time.time()
+                                data['bot_alive'] = True
+                                f.seek(0)
+                                f.truncate()
+                                json.dump(data, f, indent=2, ensure_ascii=False)
+                        else:
+                            with open(status_path, 'w', encoding='utf-8') as f:
+                                json.dump({
+                                    'bot_alive': True,
+                                    'last_bot_ping': time.time()
+                                }, f, indent=2, ensure_ascii=False)
+                    except Exception as e:
+                        logger.warning(f"خطا در بروزرسانی فایل وضعیت: {e}")
+                except Exception as file_error:
+                    logger.warning(f"خطا در مدیریت فایل وضعیت: {file_error}")
+                    
         except Exception as e:
             logger.warning(f"خطا در درخواست keep-alive: {e}")
         
-        # انتظار برای 5 دقیقه
-        await asyncio.sleep(300)
+        # انتظار برای اجرای مجدد
+        await asyncio.sleep(ping_interval)
 
 async def error_handler(update, context):
     """مدیریت خطاهای ربات"""
