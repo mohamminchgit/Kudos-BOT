@@ -24,9 +24,9 @@ from src.services import help
 
 # وارد کردن ماژول هوش مصنوعی برای سازگاری با کد قدیمی (موقتاً غیرفعال)
 try:
-    # from src.services import ai
-    AI_MODULE_AVAILABLE = False
-    logging.info("ماژول هوش مصنوعی موقتاً غیرفعال شده است.")
+    from src.services import ai
+    AI_MODULE_AVAILABLE = True
+    logging.info("ماژول هوش مصنوعی فعال شده است.")
 except ImportError:
     logging.error("ماژول هوش مصنوعی (ai.py) یافت نشد. برخی از قابلیت‌های مرتبط غیرفعال خواهند شد.")
     AI_MODULE_AVAILABLE = False

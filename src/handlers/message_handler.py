@@ -180,6 +180,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # تنظیم دکمه تأیید و لغو
         keyboard = [
             [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+            [InlineKeyboardButton("🤖 بهبود با هوش مصنوعی", callback_data=f"improve_reason^{transaction_id}")],
             [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
         ]
         
@@ -828,6 +829,7 @@ async def handle_voting_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     # تنظیم دکمه تأیید و لغو
     keyboard = [
         [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+        [InlineKeyboardButton("🤖 بهبود با هوش مصنوعی", callback_data=f"improve_reason^{transaction_id}")],
         [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
     ]
     

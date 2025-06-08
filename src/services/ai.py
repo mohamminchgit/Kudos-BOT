@@ -905,6 +905,81 @@ def get_top_vote_results(question_id=None, season_id=None):
         logger.error(f"خطا در دریافت نتایج رأی‌گیری: {e}")
         return []
 
+def improve_reason_text(user_id, original_reason, touser_name, amount):
+    """
+    بهبود متن دلیل امتیازدهی با استفاده از هوش مصنوعی
+    
+    Args:
+        user_id (int): شناسه کاربر
+        original_reason (str): متن اصلی دلیل امتیازدهی
+        touser_name (str): نام کاربر مقصد
+        amount (int): مقدار امتیاز
+        
+    Returns:
+        str: متن بهبود یافته
+    """
+    try:
+        # دریافت تاریخچه پیام‌های کاربر
+        conn = sqlite3.connect(config.DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        # دریافت 5 تراکنش آخر کاربر برای تحلیل سبک نوشتاری
+        c.execute("""
+            SELECT t.reason, u.name 
+            FROM transactions t 
+            JOIN users u ON t.touser = u.user_id 
+            WHERE t.user_id = ? AND t.reason IS NOT NULL AND t.reason != ''
+            ORDER BY t.created_at DESC LIMIT 5
+        """, (user_id,))
+        
+        previous_reasons = c.fetchall()
+        
+        # دریافت نام کاربر فرستنده
+        c.execute("SELECT name FROM users WHERE user_id = ?", (user_id,))
+        sender_result = c.fetchone()
+        sender_name = sender_result['name'] if sender_result else "کاربر"
+        
+        conn.close()
+        
+        # ساخت متن راهنمایی برای هوش مصنوعی
+        system_message = (
+            "شما یک دستیار هوش مصنوعی مفید و دوستانه هستید که به زبان فارسی پاسخ می‌دهید. "
+            "وظیفه شما بهبود متن دلیل امتیازدهی در یک ربات تلگرامی است. "
+            "متن باید مؤدبانه و صمیمی باشد و در عین حال محتوای اصلی را حفظ کند. "
+            "لطفاً متن را به گونه‌ای بهبود دهید که مفهوم اصلی حفظ شود اما بیان آن بهتر و واضح‌تر شود. "
+            "پاسخ شما فقط باید متن بهبود یافته باشد، بدون هیچ توضیح اضافی."
+        )
+        
+        # ساخت متن ورودی برای هوش مصنوعی
+        prompt = f"کاربر {sender_name} می‌خواهد {amount} امتیاز به {touser_name} بدهد با این دلیل:\n\n\"{original_reason}\"\n\n"
+        
+        # اضافه کردن تاریخچه پیام‌های قبلی برای درک سبک نوشتاری کاربر
+        if previous_reasons:
+            prompt += "در ادامه نمونه‌هایی از دلایل قبلی این کاربر برای امتیازدهی آمده است تا سبک نوشتاری او را بهتر درک کنید:\n\n"
+            
+            for idx, reason_data in enumerate(previous_reasons):
+                reason = reason_data['reason']
+                to_name = reason_data['name']
+                prompt += f"{idx+1}. به {to_name}: \"{reason}\"\n"
+            
+            prompt += "\nلطفاً متن دلیل را با توجه به سبک نوشتاری کاربر بهبود دهید. فقط متن بهبود یافته را برگردانید، بدون هیچ توضیح اضافی."
+        else:
+            prompt += "لطفاً متن دلیل را بهبود دهید. فقط متن بهبود یافته را برگردانید، بدون هیچ توضیح اضافی."
+        
+        # دریافت پاسخ از مدل هوش مصنوعی
+        ai_model = get_ai_model()  # استفاده از مدل پیش‌فرض (Gemini)
+        improved_text = ai_model.get_completion(prompt, system_message)
+        
+        # حذف نقل قول‌ها از متن
+        improved_text = improved_text.strip('"\'')
+        
+        return improved_text
+    except Exception as e:
+        logger.error(f"خطا در بهبود متن با هوش مصنوعی: {e}")
+        traceback.print_exc()
+        return original_reason  # در صورت بروز خطا، متن اصلی را برگردانیم
+
 # مثال استفاده
 if __name__ == "__main__":
     # تست مدل OpenAI

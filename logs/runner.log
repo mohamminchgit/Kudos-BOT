@@ -443,3 +443,70 @@ ImportError: cannot import name 'get_user_profile' from partially initialized mo
 2025-06-08 11:05:37,467 - INFO - ✅ رانر با موفقیت متوقف شد
 2025-06-08 11:05:37,468 - INFO - 🛑 در حال توقف رانر...
 2025-06-08 11:05:37,468 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 11:16:06,899 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 11:16:06,900 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 11:16:06,900 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 11:16:07,561 - WARNING - 🧹 پاکسازی پروسه معلق: PID 13180
+2025-06-08 11:16:07,582 - INFO - 🧹 تعداد 1 پروسه معلق پاکسازی شد
+2025-06-08 11:16:09,583 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 11:16:12,606 - INFO - ✅ ربات با موفقیت شروع شد. PID: 4176
+2025-06-08 11:16:12,607 - INFO - 👁️ شروع مانیتورینگ ربات...
+2025-06-08 11:17:42,627 - INFO - 🛑 دریافت سیگنال 2. در حال توقف رانر...
+2025-06-08 11:17:42,628 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 11:17:42,629 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 11:17:42,629 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 11:17:42,630 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 11:17:42,631 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 11:17:42,631 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 11:17:44,455 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 11:17:44,455 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 11:17:44,456 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 11:17:45,131 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 11:17:48,137 - INFO - ✅ ربات با موفقیت شروع شد. PID: 7496
+2025-06-08 11:17:48,138 - INFO - 👁️ شروع مانیتورینگ ربات...
+2025-06-08 11:18:28,179 - WARNING - ⚠️ ربات سالم نیست!
+2025-06-08 11:18:28,180 - INFO - 🔄 در حال ری‌استارت ربات...
+2025-06-08 11:18:28,180 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 11:18:28,181 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 11:18:33,556 - WARNING - 🧹 پاکسازی پروسه معلق: PID 13580
+2025-06-08 11:18:33,572 - INFO - 🧹 تعداد 1 پروسه معلق پاکسازی شد
+2025-06-08 11:18:35,573 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 11:18:38,579 - ERROR - ❌ ربات نتوانست شروع شود:
+2025-06-08 11:18:38,580 - ERROR - STDOUT: 
+2025-06-08 11:18:38,580 - ERROR - STDERR: Traceback (most recent call last):
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\bot.py", line 18, in <module>
+    from src.handlers.callback_handler import menu_callback
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\handlers\callback_handler.py", line 23, in <module>
+    from .ai_callbacks import handle_ai_callbacks
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\handlers\ai_callbacks.py", line 29, in <module>
+    from ..services.ai import get_user_perspective, generate_user_profile, analyze_admin_data, AI_MODULE_AVAILABLE
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\services\ai.py", line 10, in <module>
+    from openai import OpenAI
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\openai\__init__.py", line 9, in <module>
+    from . import types
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\openai\types\__init__.py", line 5, in <module>
+    from .batch import Batch as Batch
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\openai\types\batch.py", line 8, in <module>
+    from .shared.metadata import Metadata
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\openai\types\shared\__init__.py", line 14, in <module>
+    from .response_format_text import ResponseFormatText as ResponseFormatText
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\openai\types\shared\response_format_text.py", line 10, in <module>
+    class ResponseFormatText(BaseModel):
+        type: Literal["text"]
+        """The type of response format being defined. Always `text`."""
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\_internal\_model_construction.py", line 155, in __new__
+    cls.__pydantic_decorators__ = DecoratorInfos.build(cls)
+                                  ~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\_internal\_decorators.py", line 444, in build
+    for base in reversed(mro(model_dc)[1:]):
+                ~~~~~~~~^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+2025-06-08 11:18:38,582 - ERROR - ❌ نتوانست ربات را مجدداً شروع کند
+2025-06-08 11:18:48,175 - INFO - 🛑 دریافت سیگنال 2. در حال توقف رانر...
+2025-06-08 11:18:48,204 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 11:18:48,247 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 11:18:48,261 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 11:18:48,281 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 11:18:48,306 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 11:18:48,331 - INFO - ✅ رانر با موفقیت متوقف شد

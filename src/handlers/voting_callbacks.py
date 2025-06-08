@@ -6,6 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import sys
 import os
+import asyncio
 
 # اضافه کردن مسیر پوشه اصلی برای دسترسی به config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -35,6 +36,8 @@ async def handle_voting_callbacks(update: Update, context: ContextTypes.DEFAULT_
         await _handle_confirm_transaction(query, user.id, data, context)
     elif data.startswith("custom_points^"):
         await _handle_custom_points(query, user.id, data, context)
+    elif data.startswith("improve_reason^"):
+        await _handle_improve_reason(query, user.id, data, context)
 
 async def _handle_voting_menu(query, user_id, context):
     """نمایش منوی امتیازدهی"""
@@ -258,23 +261,20 @@ async def _handle_select_user(query, user_id, data):
         )
 
 async def _handle_give_points(query, user_id, data, context):
-    """پردازش انتخاب مقدار امتیاز و درخواست دلیل"""
+    """پردازش انتخاب مقدار امتیاز"""
     await query.answer()
+    
+    # بررسی آیا data شامل شناسه کاربر و مقدار امتیاز است
     parts = data.split("^")
+    if len(parts) < 3:
+        await query.edit_message_text(
+            "خطا در پردازش درخواست. لطفاً دوباره تلاش کنید.",
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return
     
-    # پاک کردن سایر حالت‌های فعال
-    context.user_data.pop('top_vote_mode', None)
-    context.user_data.pop('gift_card_mode', None)
-    context.user_data.pop('waiting_for_gift_card_message', None)
-    
-    # تشخیص فرمت کوتاه یا کامل
-    prefix = parts[0]
-    if prefix == "gp":  # فرمت کوتاه
-        touser_id = int(parts[1])
-        amount = int(parts[2])
-    else:  # فرمت کامل givepoint^
-        touser_id = int(parts[1])
-        amount = int(parts[2])
+    touser_id = int(parts[1])
+    amount = int(parts[2])
     
     # دریافت اطلاعات کاربر مقصد
     target_user = db_manager.execute_query(
@@ -284,44 +284,38 @@ async def _handle_give_points(query, user_id, data, context):
     )
     touser_name = target_user[0] if target_user else "کاربر"
     
-    # درخواست دلیل امتیازدهی
-    keyboard = [[InlineKeyboardButton("» بازگشت", callback_data="tovote^")]]
+    # بررسی موجودی کاربر
+    profile = get_user_profile(user_id)
+    if not profile or profile[3] < amount:
+        await query.edit_message_text(
+            "اعتبار کافی ندارید!",
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return
     
-    # ذخیره اطلاعات در context.user_data
-    context.user_data['voting_target_user_id'] = touser_id
-    context.user_data['voting_amount'] = amount
+    # ذخیره اطلاعات تراکنش در context
     context.user_data['pending_transaction'] = {
         'touser_id': touser_id,
-        'amount': amount,
-        'touser_name': touser_name
+        'touser_name': touser_name,
+        'amount': amount
     }
     
-    # ذخیره اطلاعات پیام فعلی برای ویرایش در مرحله بعدی
+    # تنظیم وضعیت کاربر به "در انتظار دلیل"
+    context.user_data['waiting_for_reason'] = True
+    
+    # ذخیره اطلاعات پیام فعلی برای استفاده بعدی (ویرایش پیام بعد از دریافت دلیل)
     if hasattr(query, 'message') and query.message:
         context.user_data['voting_message'] = {
             'chat_id': query.message.chat_id,
             'message_id': query.message.message_id
         }
     
-    try:
-        await query.edit_message_text(
-            f"شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"  
-            f"دلیل:\n-----------------\n\n"  
-            f"لطفاً دلیل امتیازدهی را بنویسید و ارسال کنید.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        
-        # تغییر وضعیت کاربر به حالت انتظار برای دریافت دلیل
-        context.user_data['waiting_for_reason'] = True
-        
-        # نمایش هشدار به کاربر برای ادامه فرآیند
-        await query.answer("لطفاً دلیل امتیازدهی را بنویسید", show_alert=True)
-    except Exception as e:
-        logger.error(f"خطا در درخواست دلیل امتیازدهی: {e}")
-        await query.edit_message_text(
-            "متأسفانه در پردازش درخواست خطایی رخ داد. لطفاً دوباره تلاش کنید.",
-            reply_markup=main_menu_keyboard(user_id)
-        )
+    # درخواست دلیل امتیازدهی
+    await query.edit_message_text(
+        f"شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+        f"لطفاً دلیل امتیازدهی را بنویسید و ارسال کنید:",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» لغو", callback_data="tovote^")]])
+    )
 
 async def _handle_confirm_transaction(query, user_id, data, context):
     """پردازش تایید نهایی تراکنش"""
@@ -598,3 +592,114 @@ async def _handle_custom_points(query, user_id, data, context):
         f"لطفاً مقدار امتیاز دلخواه خود را به صورت عدد وارد کنید (بین 1 تا {max_score}):",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("» بازگشت", callback_data=f"voteuser^{touser_id}")]])
     )
+
+async def _handle_improve_reason(query, user_id, data, context):
+    """پردازش بهبود متن دلیل با هوش مصنوعی"""
+    await query.answer("در حال بهبود متن با هوش مصنوعی...")
+    
+    # استخراج شناسه تراکنش از callback_data
+    parts = data.split("^")
+    transaction_id = parts[1] if len(parts) > 1 else ""
+    
+    # دریافت اطلاعات تراکنش از context
+    transaction_data = context.user_data.get('transaction', {})
+    
+    # بررسی تطابق شناسه تراکنش
+    if transaction_id != transaction_data.get('id', ''):
+        await query.edit_message_text(
+            "❌ خطا: اطلاعات تراکنش معتبر نیست. لطفاً دوباره تلاش کنید.",
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return
+    
+    # استخراج اطلاعات تراکنش
+    touser_id = transaction_data.get('touser_id')
+    amount = transaction_data.get('amount')
+    original_reason = transaction_data.get('reason', '-')
+    
+    if not touser_id or not amount:
+        await query.edit_message_text(
+            "❌ خطا: اطلاعات تراکنش ناقص است. لطفاً دوباره تلاش کنید.",
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return
+    
+    # دریافت نام کاربر مقصد
+    target_info = db_manager.execute_query(
+        "SELECT name FROM users WHERE user_id=?", 
+        (touser_id,), 
+        fetchone=True
+    )
+    touser_name = target_info[0] if target_info else "کاربر"
+    
+    # ارسال پیام "در حال پردازش"
+    await query.edit_message_text(
+        f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+        f"💬 دلیل: {original_reason}\n\n"
+        f"🤖 در حال بهبود متن با هوش مصنوعی...\n"
+        f"لطفاً کمی صبر کنید.",
+        reply_markup=None
+    )
+    
+    try:
+        # وارد کردن ماژول هوش مصنوعی
+        from ..services.ai import improve_reason_text, AI_MODULE_AVAILABLE
+        
+        if not AI_MODULE_AVAILABLE:
+            # اگر ماژول هوش مصنوعی در دسترس نیست
+            await query.edit_message_text(
+                f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+                f"💬 دلیل: {original_reason}\n\n"
+                f"⚠️ متأسفانه سرویس هوش مصنوعی در حال حاضر در دسترس نیست.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+                    [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+                ])
+            )
+            return
+        
+        # بهبود متن با هوش مصنوعی
+        improved_reason = await asyncio.to_thread(
+            improve_reason_text, 
+            user_id, 
+            original_reason, 
+            touser_name, 
+            amount
+        )
+        
+        # بروزرسانی دلیل در اطلاعات تراکنش
+        transaction_data['reason'] = improved_reason
+        context.user_data['transaction'] = transaction_data
+        context.user_data['full_reason'] = improved_reason
+        
+        # نمایش متن بهبود یافته به کاربر
+        keyboard = [
+            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+            [InlineKeyboardButton("🔄 بهبود مجدد", callback_data=f"improve_reason^{transaction_id}")],
+            [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+        ]
+        
+        await query.edit_message_text(
+            f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+            f"💬 دلیل اولیه: {original_reason}\n\n"
+            f"🤖 دلیل بهبود یافته: {improved_reason}\n\n"
+            f"آیا تأیید می‌کنید؟",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        
+    except Exception as e:
+        logger.error(f"خطا در بهبود متن با هوش مصنوعی: {e}")
+        
+        # در صورت بروز خطا، بازگشت به حالت عادی
+        keyboard = [
+            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+            [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+        ]
+        
+        await query.edit_message_text(
+            f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+            f"💬 دلیل: {original_reason}\n\n"
+            f"⚠️ متأسفانه در بهبود متن با هوش مصنوعی خطایی رخ داد.\n\n"
+            f"آیا تأیید می‌کنید؟",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
