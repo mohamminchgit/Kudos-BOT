@@ -1,5 +1,5 @@
 # تنظیمات ربات
-BOT_TOKEN = "8154200439:AAGllQ0YUnkBXD3bwTiQCquwuztkNFPrZd0"  # توکن ربات
+BOT_TOKEN = "8154200439:AAEoPcIkMmh-HMqyU580IHl9B1JGtGogMLM"  # توکن ربات
 BOT_NAME = "سیمرغ"  # نام ربات
 SUPPORT_USERNAME = "https://t.me/mohamminch"  # یوزرنیم پشتیبانی
 ADMIN_USER_ID = 882730020  # شناسه کاربری ادمین

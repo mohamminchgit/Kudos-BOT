@@ -182,27 +182,45 @@ def search_users(search_query, limit=10, exclude_id=None):
         list: لیستی از کاربران یافت شده
     """
     try:
+        # حذف فاصله‌های اضافی از ابتدا و انتهای رشته جستجو
+        search_query = search_query.strip()
+        logger.debug(f"جستجو برای کاربر با نام: '{search_query}'")
+        
+        # ابتدا همه کاربران را دریافت می‌کنیم
         if exclude_id is not None:
-            results = db_manager.execute_query("""
+            all_users = db_manager.execute_query("""
                 SELECT user_id, name FROM users 
-                WHERE name LIKE ? AND user_id != ? 
-                ORDER BY name LIMIT ?
-            """, (f"%{search_query}%", exclude_id, limit))
+                WHERE user_id != ? 
+                ORDER BY name
+            """, (exclude_id,))
         else:
-            results = db_manager.execute_query("""
+            all_users = db_manager.execute_query("""
                 SELECT user_id, name FROM users 
-                WHERE name LIKE ? 
-                ORDER BY name LIMIT ?
-            """, (f"%{search_query}%", limit))
+                ORDER BY name
+            """)
         
         # اطمینان از اینکه نتایج خالی نیست
-        if results is None:
-            logger.error(f"نتیجه جستجو برای '{search_query}' برگشت None")
+        if all_users is None:
+            logger.error(f"نتیجه دریافت همه کاربران برگشت None")
             return []
-            
+        
+        # فیلتر کردن کاربران بر اساس نام (با حذف فاصله‌های اضافی)
+        filtered_users = []
+        for user in all_users:
+            if search_query.lower() in user[1].strip().lower():
+                filtered_users.append(user)
+                if len(filtered_users) >= limit:
+                    break
+        
         # چاپ تعداد نتایج برای اشکال‌زدایی
-        logger.debug(f"تعداد {len(results)} کاربر برای جستجوی '{search_query}' یافت شد")
-        return results
+        logger.debug(f"تعداد {len(filtered_users)} کاربر برای جستجوی '{search_query}' یافت شد")
+        
+        # لاگ کردن نام‌های یافت شده برای اشکال‌زدایی
+        for user in filtered_users:
+            logger.debug(f"کاربر یافت شده: شناسه={user[0]}, نام='{user[1]}', نام بعد از strip='{user[1].strip()}'")
+        
+        return filtered_users
+        
     except Exception as e:
         logger.error(f"خطا در جستجوی کاربران: {e}")
         return []

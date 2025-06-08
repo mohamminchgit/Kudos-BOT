@@ -450,15 +450,23 @@ async def handle_inline_user_selection(update: Update, context: ContextTypes.DEF
     # استخراج نام کاربر از متن پیام
     selected_name = message_text.replace("کاربر انتخاب شده:", "").strip()
     
-    # یافتن کاربر بر اساس نام
+    # لاگ برای اشکال‌زدایی
+    logger.debug(f"نام کاربر انتخاب شده: '{selected_name}'")
+    
+    # ابتدا همه کاربران را دریافت می‌کنیم
     from ..database.models import db_manager
-    selected_user = db_manager.execute_query(
-        "SELECT user_id, name FROM users WHERE name = ?", 
-        (selected_name,), 
-        fetchone=True
-    )
+    all_users = db_manager.execute_query("SELECT user_id, name FROM users")
+    
+    # یافتن کاربر با مقایسه نام‌های پاک‌سازی شده
+    selected_user = None
+    for user_data in all_users:
+        if selected_name.strip().lower() == user_data[1].strip().lower():
+            selected_user = user_data
+            logger.debug(f"کاربر یافت شد: شناسه={user_data[0]}, نام='{user_data[1]}'")
+            break
     
     if not selected_user:
+        logger.warning(f"کاربر با نام '{selected_name}' یافت نشد")
         await update.message.reply_text(
             "❌ کاربر مورد نظر یافت نشد!",
             reply_markup=main_menu_keyboard(user.id)
