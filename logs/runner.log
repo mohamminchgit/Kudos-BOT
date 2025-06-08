@@ -188,3 +188,120 @@ UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-3: cha
 2025-06-08 10:02:25,065 - INFO - ✅ رانر با موفقیت متوقف شد
 2025-06-08 10:02:25,066 - INFO - 🛑 در حال توقف رانر...
 2025-06-08 10:02:25,066 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:15:28,799 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 10:15:28,800 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 10:15:28,800 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 10:15:29,381 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 10:15:32,390 - INFO - ✅ ربات با موفقیت شروع شد. PID: 2868
+2025-06-08 10:15:32,391 - INFO - 👁️ شروع مانیتورینگ ربات...
+2025-06-08 10:16:02,402 - INFO - 🛑 دریافت سیگنال 2. در حال توقف رانر...
+2025-06-08 10:16:02,402 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 10:16:02,403 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 10:16:02,403 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 10:16:02,404 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:16:02,405 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 10:16:02,405 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:20:10,440 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 10:20:10,440 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 10:20:10,441 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 10:20:10,955 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 10:20:13,963 - ERROR - ❌ ربات نتوانست شروع شود:
+2025-06-08 10:20:13,964 - ERROR - STDOUT: 
+2025-06-08 10:20:13,964 - ERROR - STDERR: Traceback (most recent call last):
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\bot.py", line 19, in <module>
+    from src.handlers.message_handler import handle_message
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\handlers\message_handler.py", line 171
+    ]
+    ^
+SyntaxError: unmatched ']'
+
+2025-06-08 10:20:13,965 - ERROR - ❌ نتوانست ربات را شروع کند. خروج از رانر.
+2025-06-08 10:20:13,965 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 10:20:13,966 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 10:20:13,966 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 10:20:13,967 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:20:54,248 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 10:20:54,249 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 10:20:54,249 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 10:20:54,826 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 10:20:57,835 - ERROR - ❌ ربات نتوانست شروع شود:
+2025-06-08 10:20:57,835 - ERROR - STDOUT: 
+2025-06-08 10:20:57,836 - ERROR - STDERR: Traceback (most recent call last):
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\bot.py", line 19, in <module>
+    from src.handlers.message_handler import handle_message
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\handlers\message_handler.py", line 171
+    ]
+    ^
+SyntaxError: unmatched ']'
+
+2025-06-08 10:20:57,837 - ERROR - ❌ نتوانست ربات را شروع کند. خروج از رانر.
+2025-06-08 10:20:57,837 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 10:20:57,838 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 10:20:57,838 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 10:20:57,839 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:26:46,621 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 10:26:46,621 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 10:26:46,622 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 10:26:47,143 - WARNING - 🧹 پاکسازی پروسه معلق: PID 10544
+2025-06-08 10:26:47,204 - INFO - 🧹 تعداد 1 پروسه معلق پاکسازی شد
+2025-06-08 10:26:49,205 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 10:26:52,213 - INFO - ✅ ربات با موفقیت شروع شد. PID: 6216
+2025-06-08 10:26:52,215 - INFO - 👁️ شروع مانیتورینگ ربات...
+2025-06-08 10:29:32,363 - WARNING - ⚠️ ربات سالم نیست!
+2025-06-08 10:29:32,364 - INFO - 🔄 در حال ری‌استارت ربات...
+2025-06-08 10:29:32,364 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 10:29:32,365 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 10:29:37,770 - WARNING - 🧹 پاکسازی پروسه معلق: PID 9936
+2025-06-08 10:29:37,809 - INFO - 🧹 تعداد 1 پروسه معلق پاکسازی شد
+2025-06-08 10:29:39,810 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 10:29:42,817 - ERROR - ❌ ربات نتوانست شروع شود:
+2025-06-08 10:29:42,817 - ERROR - STDOUT: 2025-06-08 10:29:42,559 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+Bot started successfully...
+
+2025-06-08 10:29:42,818 - ERROR - STDERR: INFO:__main__:\u0631\u0628\u0627\u062a \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0631\u0627\u0647\u200c\u0627\u0646\u062f\u0627\u0632\u06cc \u0634\u062f
+Traceback (most recent call last):
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\bot.py", line 139, in main
+    await app.initialize()
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\telegram\ext\_application.py", line 486, in initialize
+    await self.bot.initialize()
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\telegram\ext\_extbot.py", line 315, in initialize
+    await super().initialize()
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\telegram\_bot.py", line 837, in initialize
+    await asyncio.gather(self._request[0].initialize(), self._request[1].initialize())
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\site-packages\telegram\request\_httpxrequest.py", line 223, in initialize
+    async def initialize(self) -> None:
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\m.cheraghian\Desktop\Kudos-BOT\bot.py", line 215, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\m.cheraghian\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+2025-06-08 10:29:42,820 - ERROR - ❌ نتوانست ربات را مجدداً شروع کند
+2025-06-08 10:29:52,278 - INFO - 🛑 دریافت سیگنال 2. در حال توقف رانر...
+2025-06-08 10:29:52,280 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 10:29:52,281 - INFO - 🛑 در حال توقف ربات...
+2025-06-08 10:29:52,282 - INFO - ✅ ربات با موفقیت متوقف شد
+2025-06-08 10:29:52,283 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:29:52,284 - INFO - 🛑 در حال توقف رانر...
+2025-06-08 10:29:52,285 - INFO - ✅ رانر با موفقیت متوقف شد
+2025-06-08 10:30:59,254 - INFO - 🎯 شروع Bot Runner...
+2025-06-08 10:30:59,254 - INFO - 📁 پوشه کاری: C:\Users\m.cheraghian\Desktop\Kudos-BOT
+2025-06-08 10:30:59,254 - INFO - 📝 فایل لاگ: C:\Users\m.cheraghian\Desktop\Kudos-BOT\logs\runner.log
+2025-06-08 10:30:59,924 - INFO - 🚀 در حال شروع ربات...
+2025-06-08 10:31:02,931 - INFO - ✅ ربات با موفقیت شروع شد. PID: 7236
+2025-06-08 10:31:02,932 - INFO - 👁️ شروع مانیتورینگ ربات...

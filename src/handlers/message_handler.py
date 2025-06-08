@@ -7,6 +7,7 @@ import os
 import time
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+import uuid
 
 # اضافه کردن مسیر پوشه اصلی برای دسترسی به config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -162,18 +163,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # دریافت دلیل امتیازدهی
         reason = text.strip()
         
-        # ایجاد کیبورد تایید
+        # ایجاد یک شناسه تراکنش منحصر به فرد
+        transaction_id = str(uuid.uuid4())[:8]  # استفاده از 8 کاراکتر اول UUID برای کوتاه‌تر بودن
+        
+        # ذخیره اطلاعات تراکنش در context
+        context.user_data['transaction'] = {
+            'id': transaction_id,
+            'touser_id': touser_id,
+            'amount': amount,
+            'reason': reason
+        }
+        
+        # تنظیم دکمه تأیید و لغو - فقط شناسه تراکنش را در callback_data قرار می‌دهیم
         keyboard = [
-            [
-                InlineKeyboardButton("✅ تایید", callback_data=f"Confirm^{touser_id}^{amount}^{reason}"),
-                InlineKeyboardButton("❌ لغو", callback_data="tovote^")
-            ]
+            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+            [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
         ]
         
         # ارسال پیام تایید - استفاده از ویرایش پیام قبلی به جای ارسال پیام جدید
         try:
             # اطلاعات پیام قبلی ذخیره شده
             voting_message = context.user_data.get('voting_message')
+            
+            # ذخیره دلیل کامل در context برای استفاده بعدی
+            context.user_data['full_reason'] = reason
             
             if voting_message and 'chat_id' in voting_message and 'message_id' in voting_message:
                 # ویرایش پیام قبلی
@@ -798,9 +811,20 @@ async def handle_voting_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     )
     sender_name = sender_info[0] if sender_info else "کاربر"
     
+    # ایجاد یک شناسه تراکنش منحصر به فرد
+    transaction_id = str(uuid.uuid4())[:8]
+    
+    # ذخیره اطلاعات تراکنش در context
+    context.user_data['transaction'] = {
+        'id': transaction_id,
+        'touser_id': touser_id,
+        'amount': amount,
+        'reason': message_text.strip()
+    }
+    
     # تنظیم دکمه تأیید و لغو
     keyboard = [
-        [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{touser_id}^{amount}^{message_text}")],
+        [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
         [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
     ]
     

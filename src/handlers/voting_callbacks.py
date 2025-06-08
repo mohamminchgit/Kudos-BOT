@@ -325,10 +325,33 @@ async def _handle_give_points(query, user_id, data, context):
 async def _handle_confirm_transaction(query, user_id, data, context):
     """پردازش تایید نهایی تراکنش"""
     await query.answer()
+    
+    # دریافت شناسه تراکنش از callback_data
     parts = data.split("^")
-    touser_id = int(parts[1])
-    amount = int(parts[2])
-    reason = parts[3] if len(parts) > 3 else "-"
+    transaction_id = parts[1] if len(parts) > 1 else ""
+    
+    # دریافت اطلاعات تراکنش از context
+    transaction_data = context.user_data.get('transaction', {})
+    
+    # بررسی تطابق شناسه تراکنش
+    if transaction_id != transaction_data.get('id', ''):
+        await query.edit_message_text(
+            "❌ خطا: اطلاعات تراکنش معتبر نیست. لطفاً دوباره تلاش کنید.",
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return
+    
+    # استخراج اطلاعات تراکنش
+    touser_id = transaction_data.get('touser_id')
+    amount = transaction_data.get('amount')
+    reason = transaction_data.get('reason', '-')
+    
+    if not touser_id or not amount:
+        await query.edit_message_text(
+            "❌ خطا: اطلاعات تراکنش ناقص است. لطفاً دوباره تلاش کنید.",
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return
     
     # بررسی موجودی کاربر
     profile = get_user_profile(user_id)
@@ -448,7 +471,9 @@ async def _handle_confirm_transaction(query, user_id, data, context):
         # پاک کردن اطلاعات تراکنش از context
         context.user_data.pop('pending_transaction', None)
         context.user_data.pop('waiting_for_reason', None)
-        context.user_data.pop('voting_message', None)  # پاک کردن اطلاعات پیام
+        context.user_data.pop('voting_message', None)  # پاک کردن اطلاعات پیام قبلی
+        context.user_data.pop('transaction', None)  # پاک کردن اطلاعات تراکنش
+        context.user_data.pop('full_reason', None)  # پاک کردن دلیل کامل (اگر وجود داشته باشد)
         
     except Exception as e:
         logger.error(f"Error in transaction: {e}")
