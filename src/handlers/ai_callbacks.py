@@ -48,7 +48,8 @@ async def handle_ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE
     ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
     
     # اگر قابلیت‌های هوش مصنوعی غیرفعال شده باشند و کاربر ادمین نباشد، پیام مناسب نمایش دهیم
-    if ai_features_enabled == "0":
+    # فقط برای کالبک‌های مرتبط با هوش مصنوعی اعمال شود نه ترین‌ها
+    if ai_features_enabled == "0" and not callback_data.startswith(("top_vote^", "top_select^", "top_results^")):
         from ..handlers.admin_handlers import is_admin
         if not is_admin(user.id):
             await query.answer("⚠️ این بخش موقتاً غیرفعال است.", show_alert=True)

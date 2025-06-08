@@ -177,12 +177,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             'reason': reason
         }
         
+        # بررسی وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+        from ..database.db_utils import execute_db_query
+        from ..handlers.admin_handlers import is_admin
+        
+        ai_features_enabled = execute_db_query(
+            "SELECT value FROM settings WHERE key='ai_features_enabled'", 
+            fetchone=True
+        )
+        ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+        
         # تنظیم دکمه تأیید و لغو
         keyboard = [
-            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
-            [InlineKeyboardButton("🤖 بهبود با هوش مصنوعی", callback_data=f"improve_reason^{transaction_id}")],
-            [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+            [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")]
         ]
+        
+        # اگر هوش مصنوعی فعال است یا کاربر ادمین است، دکمه بهبود با هوش مصنوعی را نمایش بده
+        if ai_features_enabled == "1" or is_admin(update.effective_user.id):
+            keyboard.append([InlineKeyboardButton("🤖 بهبود با هوش مصنوعی", callback_data=f"improve_reason^{transaction_id}")])
+        
+        keyboard.append([InlineKeyboardButton("❌ لغو", callback_data="tovote^")])
         
         # ارسال پیام تایید - استفاده از ویرایش پیام قبلی به جای ارسال پیام جدید
         try:
@@ -844,12 +858,26 @@ async def handle_voting_reason(update: Update, context: ContextTypes.DEFAULT_TYP
         'reason': message_text.strip()
     }
     
+    # بررسی وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+    from ..database.db_utils import execute_db_query
+    from ..handlers.admin_handlers import is_admin
+    
+    ai_features_enabled = execute_db_query(
+        "SELECT value FROM settings WHERE key='ai_features_enabled'", 
+        fetchone=True
+    )
+    ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+    
     # تنظیم دکمه تأیید و لغو
     keyboard = [
-        [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
-        [InlineKeyboardButton("🤖 بهبود با هوش مصنوعی", callback_data=f"improve_reason^{transaction_id}")],
-        [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+        [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")]
     ]
+    
+    # اگر هوش مصنوعی فعال است یا کاربر ادمین است، دکمه بهبود با هوش مصنوعی را نمایش بده
+    if ai_features_enabled == "1" or is_admin(user.id):
+        keyboard.append([InlineKeyboardButton("🤖 بهبود با هوش مصنوعی", callback_data=f"improve_reason^{transaction_id}")])
+    
+    keyboard.append([InlineKeyboardButton("❌ لغو", callback_data="tovote^")])
     
     await update.message.reply_text(
         f"در حال ارسال {amount} امتیاز به {touser_name}\n\n"

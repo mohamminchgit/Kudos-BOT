@@ -632,6 +632,29 @@ async def _handle_improve_reason(query, user_id, data, context):
     )
     touser_name = target_info[0] if target_info else "کاربر"
     
+    # بررسی وضعیت فعال/غیرفعال بودن قابلیت‌های هوش مصنوعی
+    from ..database.db_utils import execute_db_query
+    from ..handlers.admin_handlers import is_admin
+    
+    ai_features_enabled = execute_db_query(
+        "SELECT value FROM settings WHERE key='ai_features_enabled'", 
+        fetchone=True
+    )
+    ai_features_enabled = ai_features_enabled[0] if ai_features_enabled else "1"  # پیش‌فرض: فعال
+    
+    # اگر قابلیت‌های هوش مصنوعی غیرفعال شده باشند و کاربر ادمین نباشد، پیام مناسب نمایش دهیم
+    if ai_features_enabled == "0" and not is_admin(user_id):
+        await query.edit_message_text(
+            f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
+            f"💬 دلیل: {original_reason}\n\n"
+            f"⚠️ قابلیت بهبود متن با هوش مصنوعی موقتاً غیرفعال است.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✅ تأیید", callback_data=f"Confirm^{transaction_id}")],
+                [InlineKeyboardButton("❌ لغو", callback_data="tovote^")]
+            ])
+        )
+        return
+    
     # ارسال پیام "در حال پردازش"
     await query.edit_message_text(
         f"✨ شما در حال ارسال {amount} امتیاز به {touser_name} هستید.\n\n"
