@@ -32,8 +32,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.debug(f"پیام جدید از {user.id}: {text[:20]}...")
     
     # بررسی پیام‌های خاص
+    # وضعیت context.user_data را بررسی می‌کنیم
+    # در PTB نمی‌توان به context.user_data مستقیماً مقدار جدید اختصاص داد
     if not context.user_data:
-        context.user_data = {}
+        # به جای تخصیص مستقیم، از روش clear و update استفاده می‌کنیم
+        pass
     
     # بررسی پیام‌های مربوط به کالبک‌های اینلاین
     if text and text.startswith("voteuser^"):
@@ -370,7 +373,7 @@ async def handle_vote_user_selection(update: Update, context: ContextTypes.DEFAU
         voting_menu = context.user_data.get('voting_menu')
         
         # بررسی موجودی کاربر
-        from ..database.user_functions import get_user_profile
+        from ..database.db_utils import get_user_profile
         profile = get_user_profile(user.id)
         if not profile or profile[3] < 1:
             if voting_menu:
@@ -542,7 +545,7 @@ async def handle_inline_user_selection(update: Update, context: ContextTypes.DEF
     else:
         # در حالت امتیازدهی معمولی
         # بررسی موجودی کاربر
-        from ..database.user_functions import get_user_profile
+        from ..database.db_utils import get_user_profile
         profile = get_user_profile(user.id)
         if not profile or profile[3] < 1:
             await update.effective_chat.send_message(
@@ -786,7 +789,7 @@ async def handle_voting_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     touser_name = target_user[0] if target_user else "کاربر"
     
     # بررسی موجودی کاربر
-    from ..database.user_functions import get_user_profile
+    from ..database.db_utils import get_user_profile
     profile = get_user_profile(user.id)
     if not profile or profile[3] < amount:
         await update.message.reply_text(

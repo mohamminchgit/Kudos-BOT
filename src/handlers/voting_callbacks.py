@@ -13,7 +13,7 @@ import config
 
 from ..database.models import db_manager
 from ..database.user_functions import get_all_users
-from ..database.db_utils import get_user_profile
+from ..database.db_utils import get_user_profile, get_db_connection
 from ..database.season_functions import get_active_season
 from ..utils.ui_helpers_new import main_menu_keyboard
 
@@ -402,7 +402,48 @@ async def _handle_confirm_transaction(query, user_id, data, context):
             from datetime import datetime
             current_time = datetime.now()
             jalali_date = jdatetime.datetime.fromgregorian(datetime=current_time)
-            jalali_date_str = jalali_date.strftime("%A %d %B %Y")
+            
+            # نگاشت دستی روزها و ماه‌های فارسی
+            fa_weekdays = {
+                'Saturday': 'شنبه',
+                'Sunday': 'یکشنبه',
+                'Monday': 'دوشنبه',
+                'Tuesday': 'سه‌شنبه',
+                'Wednesday': 'چهارشنبه',
+                'Thursday': 'پنجشنبه',
+                'Friday': 'جمعه',
+            }
+            fa_months = {
+                'Farvardin': 'فروردین',
+                'Ordibehesht': 'اردیبهشت',
+                'Khordad': 'خرداد',
+                'Tir': 'تیر',
+                'Mordad': 'مرداد',
+                'Shahrivar': 'شهریور',
+                'Mehr': 'مهر',
+                'Aban': 'آبان',
+                'Azar': 'آذر',
+                'Dey': 'دی',
+                'Bahman': 'بهمن',
+                'Esfand': 'اسفند',
+            }
+            
+            # تبدیل اعداد انگلیسی به فارسی
+            def en_to_fa_numbers(text):
+                fa_nums = {'0': '۰', '1': '۱', '2': '۲', '3': '۳', '4': '۴',
+                          '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹'}
+                for en, fa in fa_nums.items():
+                    text = text.replace(en, fa)
+                return text
+            
+            weekday_en = jalali_date.strftime("%A")
+            month_en = jalali_date.strftime("%B")
+            weekday = fa_weekdays.get(weekday_en, weekday_en)
+            month = fa_months.get(month_en, month_en)
+            day = en_to_fa_numbers(str(jalali_date.day))
+            year = en_to_fa_numbers(str(jalali_date.year))
+            
+            jalali_date_str = f"{weekday} {day} {month} {year}"
             
             # ثبت تراکنش
             c.execute(
@@ -439,9 +480,51 @@ async def _handle_confirm_transaction(query, user_id, data, context):
         # تبدیل تاریخ میلادی به شمسی
         import jdatetime
         from datetime import datetime
+        
+        # نگاشت دستی روزها و ماه‌های فارسی
+        fa_weekdays = {
+            'Saturday': 'شنبه',
+            'Sunday': 'یکشنبه',
+            'Monday': 'دوشنبه',
+            'Tuesday': 'سه‌شنبه',
+            'Wednesday': 'چهارشنبه',
+            'Thursday': 'پنجشنبه',
+            'Friday': 'جمعه',
+        }
+        fa_months = {
+            'Farvardin': 'فروردین',
+            'Ordibehesht': 'اردیبهشت',
+            'Khordad': 'خرداد',
+            'Tir': 'تیر',
+            'Mordad': 'مرداد',
+            'Shahrivar': 'شهریور',
+            'Mehr': 'مهر',
+            'Aban': 'آبان',
+            'Azar': 'آذر',
+            'Dey': 'دی',
+            'Bahman': 'بهمن',
+            'Esfand': 'اسفند',
+        }
+        
+        # تبدیل اعداد انگلیسی به فارسی
+        def en_to_fa_numbers(text):
+            fa_nums = {'0': '۰', '1': '۱', '2': '۲', '3': '۳', '4': '۴',
+                      '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹'}
+            for en, fa in fa_nums.items():
+                text = text.replace(en, fa)
+            return text
+        
         current_time = datetime.now()
         jalali_date = jdatetime.datetime.fromgregorian(datetime=current_time)
-        jalali_date_str = jalali_date.strftime("%A %d %B %Y")
+        
+        weekday_en = jalali_date.strftime("%A")
+        month_en = jalali_date.strftime("%B")
+        weekday = fa_weekdays.get(weekday_en, weekday_en)
+        month = fa_months.get(month_en, month_en)
+        day = en_to_fa_numbers(str(jalali_date.day))
+        year = en_to_fa_numbers(str(jalali_date.year))
+        
+        jalali_date_str = f"{weekday} {day} {month} {year}"
         
         # ارسال پیام به کانال (اگر تنظیم شده باشد)
         try:

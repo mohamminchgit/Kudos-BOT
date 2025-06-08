@@ -255,3 +255,34 @@
 2025-06-08 10:51:22,107 - __main__ - INFO - در حال بستن ربات...
 2025-06-08 10:51:43,857 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
 2025-06-08 10:51:44,406 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:00:41,493 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:00:42,173 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:02:07,631 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:02:07,632 - __main__ - ERROR - اطلاعات خطا: ImportError: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:02:22,499 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:02:22,500 - __main__ - ERROR - اطلاعات خطا: ImportError: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:03:11,875 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 11:03:18,374 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:03:18,899 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:03:22,851 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: You can not assign a new value to user_data, see https://github.com/python-telegram-bot/python-telegram-bot/wiki/Storing-bot%2C-user-and-chat-related-data
+2025-06-08 11:03:22,852 - __main__ - ERROR - اطلاعات خطا: AttributeError: You can not assign a new value to user_data, see https://github.com/python-telegram-bot/python-telegram-bot/wiki/Storing-bot%2C-user-and-chat-related-data
+2025-06-08 11:03:51,175 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: You can not assign a new value to user_data, see https://github.com/python-telegram-bot/python-telegram-bot/wiki/Storing-bot%2C-user-and-chat-related-data
+2025-06-08 11:03:51,176 - __main__ - ERROR - اطلاعات خطا: AttributeError: You can not assign a new value to user_data, see https://github.com/python-telegram-bot/python-telegram-bot/wiki/Storing-bot%2C-user-and-chat-related-data
+2025-06-08 11:04:45,540 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:04:46,042 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:04:52,923 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 11:05:07,186 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:05:07,812 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:05:16,314 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:05:16,315 - __main__ - ERROR - اطلاعات خطا: ImportError: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:05:20,044 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 11:05:35,482 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:05:36,037 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:05:44,869 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:05:45,512 - __main__ - INFO - ربات در حال کار است
+2025-06-08 11:05:48,244 - __main__ - ERROR - خطا در پردازش به‌روزرسانی: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:05:48,246 - __main__ - ERROR - اطلاعات خطا: ImportError: cannot import name 'get_user_profile' from 'src.database.user_functions' (C:\Users\m.cheraghian\Desktop\Kudos-BOT\src\database\user_functions.py)
+2025-06-08 11:06:56,959 - __main__ - INFO - در حال بستن ربات...
+2025-06-08 11:06:57,611 - __main__ - INFO - ربات با موفقیت بسته شد
+2025-06-08 11:08:38,319 - __main__ - INFO - ربات با موفقیت راه‌اندازی شد
+2025-06-08 11:08:38,838 - __main__ - INFO - ربات در حال کار است
